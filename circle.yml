@@ -17,4 +17,4 @@ test:
       && export DB_NAME="circle_test"
       && export DB_PORT=5432
       && export DB_USER="ubuntu"
-      && python ./manager.py test
+      && python ./albatross/manage.py test
