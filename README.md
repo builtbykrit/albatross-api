@@ -19,9 +19,19 @@ sed -i -e "s#set('.*')#set('=\&;:%+~,*@!()/?[]')#" ./repo/lib/python3.X/site-pac
 ```
 
 ## Developing and Testing
-1. Run `source ./bin/activate` before you start developing or testing.
-2. To run the API locally use  `python ./manager.py develop`
-3. To run the tests use `python ./manager.py test`
+1. If you haven't used Django before:
+
+   a. Skim through the official [Django overview](https://docs.djangoproject.com/en/1.11/intro/overview/) and the official [Django tutorial](https://docs.djangoproject.com/en/1.11/intro/tutorial01/).
+   
+   b. Read this [stackoverflow question and its accepted answer](https://stackoverflow.com/questions/6100021/django-one-app-with-many-models-vs-many-apps-with-single-model).
+   
+   c. Watch at least the first 20 minutes of [this talk](https://www.youtube.com/watch?v=A-S0tqpPga4).
+   
+   Django doesn't neccessarily have a whole lot of magic but it is pretty opinonated, so it is important to understand the design philosophy behind it before you start programming with it.
+   
+2. Run `source ./bin/activate` before you start developing or testing.
+3. To run the API locally use  `python ./manager.py develop`
+4. To run the tests use `python ./manager.py test`
 
 ## Notes
 
