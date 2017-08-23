@@ -27,6 +27,10 @@ sed -i -e "s#set('.*')#set('=\&;:%+~,*@!()/?[]')#" ./repo/lib/python3.X/site-pac
    
    c. Watch at least the first 20 minutes of [this talk](https://www.youtube.com/watch?v=A-S0tqpPga4).
    
+   d. Read the official [Django Rest Framework tutorial](http://www.django-rest-framework.org/tutorial/quickstart/)
+   
+   e. [django-tagging](https://github.com/Fantomas42/django-tagging) Is a good example Django app.
+   
    Django doesn't neccessarily have a whole lot of magic but it is pretty opinonated, so it is important to understand the design philosophy behind it before you start programming with it.
    
 2. Run `source ./bin/activate` before you start developing or testing.
