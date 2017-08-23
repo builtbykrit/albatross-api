@@ -19,3 +19,9 @@ test:
       && export DB_USER="ubuntu"
       && cd ./albatross
       && python ./manage.py test
+
+deployment:
+  master:
+     branch: master
+     commands:
+       - ssh -p 50005 -i /home/ubuntu/.ssh/id_production deploy@34.195.47.179 "/var/www/albatross_api/atomic_deployments.sh

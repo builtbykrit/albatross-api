@@ -29,7 +29,8 @@ if CONFIG_NAME == 'production':
 else:
     DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1', 'getalbatross.com', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1', '34.195.47.179',
+                 'app.getalbatross.com', 'localhost']
 
 
 # Application definition
