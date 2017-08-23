@@ -1,7 +1,12 @@
 from django.core.files.storage import default_storage
 from django.http import Http404, HttpResponse
 
-def web_app_view(request):
+def ember_web_app_view(request):
+    """
+    get:
+    Renders index.html for the Ember Web App deployed to the
+    S3 bucket in your Django Storages settings.
+    """
     page_name = 'index.html'
     revision = request.GET.get('revision')
     if revision:

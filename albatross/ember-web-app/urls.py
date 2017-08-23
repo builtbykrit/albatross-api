@@ -14,8 +14,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url
-from .views import web_app_view
+from .views import ember_web_app_view
 
 urlpatterns = [
-    url(r'^', web_app_view),
+    url(r'^', ember_web_app_view),
 ]

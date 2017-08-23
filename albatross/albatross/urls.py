@@ -19,5 +19,5 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^rest-auth/', include('rest_auth.urls')),
-    url(r'^', include('webapp.urls')),
+    url(r'^', include('ember-web-app.urls')),
 ]

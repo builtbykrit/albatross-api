@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_auth',
     'storages',
-    'webapp',
+    'ember-web-app',
 ]
 
 MIDDLEWARE = [
