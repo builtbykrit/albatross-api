@@ -25,7 +25,7 @@ sed -i -e "s#set('.*')#set('=\&;:%+~,*@!()/?[]')#" ./repo/lib/python3.X/site-pac
    
    b. Read this [stackoverflow question and its accepted answer](https://stackoverflow.com/questions/6100021/django-one-app-with-many-models-vs-many-apps-with-single-model).
    
-   c. Watch at least the first 20 minutes of [this talk](https://www.youtube.com/watch?v=A-S0tqpPga4).
+   c. Watch at least the first 20 minutes of [this talk](https://www.youtube.com/watch?v=A-S0tqpPga4) and if you're really interested watch [this one](http://pyvideo.org/pycon-us-2011/pycon-2011--pluggable-django-patterns.html).
    
    d. Read the official [Django Rest Framework tutorial](http://www.django-rest-framework.org/tutorial/quickstart/)
    
