@@ -30,7 +30,7 @@ else:
     DEBUG = False
 
 ALLOWED_HOSTS = ['127.0.0.1', '34.195.47.179',
-                 'getalbatross.com', 'localhost']
+                 'getalbatross.com', 'localhost', 'www.getalbatross.com']
 
 
 # Application definition
