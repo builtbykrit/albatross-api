@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
-import os
+import requests, os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,8 +30,16 @@ else:
     DEBUG = False
 
 ALLOWED_HOSTS = ['127.0.0.1', '34.195.47.179',
-                 'AlbatrossApplicationLB-1091800435.us-east-1.elb.amazonaws.com',
                  'getalbatross.com', 'localhost', 'www.getalbatross.com']
+# Add ELB to ALLOWED_HOSTS
+EC2_PRIVATE_IP  =   None
+try:
+    EC2_PRIVATE_IP  =   requests.get('http://169.254.169.254/latest/meta-data/local-ipv4', timeout = 0.01).text
+except requests.exceptions.RequestException:
+    pass
+
+if EC2_PRIVATE_IP:
+    ALLOWED_HOSTS.append(EC2_PRIVATE_IP)
 
 
 # Application definition
