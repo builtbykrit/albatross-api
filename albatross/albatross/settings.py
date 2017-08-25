@@ -30,6 +30,7 @@ else:
     DEBUG = False
 
 ALLOWED_HOSTS = ['127.0.0.1', '34.195.47.179',
+                 'AlbatrossApplicationLB-1091800435.us-east-1.elb.amazonaws.com',
                  'getalbatross.com', 'localhost', 'www.getalbatross.com']
 
 
