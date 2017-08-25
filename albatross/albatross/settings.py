@@ -31,15 +31,20 @@ else:
 
 ALLOWED_HOSTS = ['127.0.0.1', '34.195.47.179',
                  'getalbatross.com', 'localhost', 'www.getalbatross.com']
-# Add ELB to ALLOWED_HOSTS
-EC2_PRIVATE_IP  =   None
 try:
-    EC2_PRIVATE_IP  =   requests.get('http://169.254.169.254/latest/meta-data/local-ipv4', timeout = 0.01).text
+    EC2_PRIVATE_IP = requests.get(
+        'http://169.254.169.254/latest/meta-data/local-ipv4',
+        timeout = 0.01
+    ).text
+    ALLOWED_HOSTS.append(EC2_PRIVATE_IP)
+
+    ELB_HOST_NAME = requests.get(
+        'http://169.254.169.254/latest/meta-data/public-hostname',
+        timeout = 0.01
+    ).text
+    ALLOWED_HOSTS.append(ELB_HOST_NAME)
 except requests.exceptions.RequestException:
     pass
-
-if EC2_PRIVATE_IP:
-    ALLOWED_HOSTS.append(EC2_PRIVATE_IP)
 
 
 # Application definition
