@@ -88,5 +88,4 @@ class ProjectViewTests(TestCase):
         response = client.get(reverse('projects-list'))
         self.assertEqual(response.status_code, 200)
         json_response = json.loads(response.content)
-        print(json_response)
         self.assertEqual(len(json_response['data']), 1)

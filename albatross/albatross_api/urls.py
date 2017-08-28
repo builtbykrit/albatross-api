@@ -17,6 +17,7 @@ from django.conf.urls import include, url
 
 urlpatterns = [
     url(r'^registration/', include('registration.urls')),
+    url(r'^projects/', include('projects.urls')),
     url(r'^', include('rest_auth.urls')),
     url(r'^', include('ember_web_app.urls')),
 ]

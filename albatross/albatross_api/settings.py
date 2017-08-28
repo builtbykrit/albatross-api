@@ -61,7 +61,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_auth',
     'storages',
-    'ember-web-app',
+    'ember_web_app',
     'projects',
     'registration',
     'behave_django'
