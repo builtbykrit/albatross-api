@@ -55,14 +55,19 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.sites',
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_auth',
     'storages',
     'ember-web-app',
-    'projects'
+    'projects',
+    'registration',
+    'behave_django'
 ]
+
+SITE_ID = 1 # For rest_auth.registration
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -74,7 +79,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'albatross.urls'
+ROOT_URLCONF = 'albatross_api.urls'
 
 TEMPLATES = [
     {
@@ -92,7 +97,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'albatross.wsgi.application'
+WSGI_APPLICATION = 'albatross_api.wsgi.application'
 
 
 # Database
@@ -110,9 +115,17 @@ DATABASES = {
 }
 
 
+# Django Auth Settings
+
+ACCOUNT_EMAIL_REQUIRED = True
+
+ACCOUNT_USERNAME_REQUIRED = False
+
+REST_SESSION_LOGIN = True
+
+
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -149,24 +162,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
-# Django Storages Settings
+# Django Email settings
+# https://github.com/elbuo8/sendgrid-django
 
-AWS_ACCESS_KEY_ID = os.environ.get('S3_API_KEY')
+EMAIL_BACKEND = "sgbackend.SendGridBackend"
 
-from boto.s3.connection import OrdinaryCallingFormat
-AWS_S3_CALLING_FORMAT = OrdinaryCallingFormat()
-
-AWS_S3_HOST = 's3.amazonaws.com'
-
-AWS_S3_REGION_NAME = 'us-east-1'
-
-AWS_SECRET_ACCESS_KEY = os.environ.get('S3_API_SECRET')
-
-AWS_STORAGE_BUCKET_NAME = os.environ.get('S3_WEB_APP_ASSETS_BUCKET')
-
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
-
-S3_USE_SIGV4 = True
+SENDGRID_API_KEY = "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"
 
 
 # Django REST Framework Settings
@@ -187,3 +188,23 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
 }
+
+
+# Django Storages Settings
+
+AWS_ACCESS_KEY_ID = os.environ.get('S3_API_KEY')
+
+from boto.s3.connection import OrdinaryCallingFormat
+AWS_S3_CALLING_FORMAT = OrdinaryCallingFormat()
+
+AWS_S3_HOST = 's3.amazonaws.com'
+
+AWS_S3_REGION_NAME = 'us-east-1'
+
+AWS_SECRET_ACCESS_KEY = os.environ.get('S3_API_SECRET')
+
+AWS_STORAGE_BUCKET_NAME = os.environ.get('S3_WEB_APP_ASSETS_BUCKET')
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+
+S3_USE_SIGV4 = True
