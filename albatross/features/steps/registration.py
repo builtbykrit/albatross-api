@@ -1,6 +1,7 @@
 import json
 
 from behave import *
+from django.conf import settings
 from django.contrib.auth.models import User
 from rest_framework.test import RequestsClient
 
@@ -28,7 +29,8 @@ def step_impl(context):
 
 @when('we try to register')
 def step_impl(context):
-    url = context.get_url('/registration/')
+    url = context.get_url('/{}registration/'.format(
+            settings.ROOT_URLPREFIX if settings.ROOT_URLPREFIX else ''))
     client = RequestsClient()
     client.headers.update({
         'Accept': 'application/vnd.api+json',

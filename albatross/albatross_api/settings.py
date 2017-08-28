@@ -81,6 +81,8 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'albatross_api.urls'
 
+ROOT_URLPREFIX = 'api/'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

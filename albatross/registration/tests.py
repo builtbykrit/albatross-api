@@ -1,5 +1,6 @@
 import json
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 
@@ -21,7 +22,9 @@ class RegistrationTestCase(TestCase):
             }
         }
         header = {'Accept':'application/vnd.api+json'}
-        return client.post('/registration/',
+        url = '/{}registration/'.format(
+            settings.ROOT_URLPREFIX if settings.ROOT_URLPREFIX else '')
+        return client.post(url,
                            content_type='application/vnd.api+json',
                            data = json.dumps(data),
                            **header)

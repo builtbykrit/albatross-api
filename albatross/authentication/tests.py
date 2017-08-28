@@ -1,5 +1,6 @@
 import json
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 
@@ -22,7 +23,9 @@ class RegistrationTestCase(TestCase):
     def login(self, account_credentials):
         client = Client()
         header = {'Accept':'application/json'}
-        return client.post('/login/',
+        url = '/{}login/'.format(
+            settings.ROOT_URLPREFIX if settings.ROOT_URLPREFIX else '')
+        return client.post(url,
                            content_type='application/json',
                            data = json.dumps(account_credentials),
                            **header)
