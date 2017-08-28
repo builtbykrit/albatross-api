@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'rest_auth',
     'storages',
     'ember-web-app',
+    'projects'
 ]
 
 MIDDLEWARE = [
