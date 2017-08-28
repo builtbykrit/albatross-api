@@ -81,7 +81,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'albatross_api.urls'
 
-ROOT_URLPREFIX = 'api/'
+ROOT_URLPREFIX = 'api/v1/'
 
 TEMPLATES = [
     {
