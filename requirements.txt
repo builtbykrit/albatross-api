@@ -1,3 +1,5 @@
+behave==1.2.5
+behave-django==0.5.0
 boto==2.48.0
 certifi==2017.7.27.1
 chardet==3.0.4
@@ -15,6 +17,8 @@ itypes==1.1.0
 Jinja2==2.9.6
 Markdown==2.6.9
 MarkupSafe==1.0
+parse==1.8.2
+parse-type==0.3.4
 psycopg2==2.7.3
 Pygments==2.2.0
 python-http-client==3.0.0
