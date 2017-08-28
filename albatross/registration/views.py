@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.db.utils import IntegrityError
-from rest_framework.exceptions import APIException,ValidationError
+from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.generics import CreateAPIView
 from rest_framework_json_api import renderers
 
@@ -17,10 +17,10 @@ class UserRegistrationView(CreateAPIView):
         try:
             return super().create(request, *args, **kwargs)
         except IntegrityError as e:
-            strE = str(e)
-            if 'Key (username)=(' in strE and ') already exists.' in strE:
+            str_e = str(e)
+            if 'Key (username)=(' in str_e and ') already exists.' in str_e:
                 raise ValidationError(
                     'Another user is already registered using that email.'
                 )
             else:
-                raise APIException(strE)
+                raise APIException(str_e)
