@@ -3,27 +3,26 @@ from django.test import TestCase
 from .models import Project, Category, Item
 
 
-class CategoryTestCase(TestCase):
+class CategoryModelTestCase(TestCase):
     def setUp(self):
         project = Project.objects.create(name='My Project')
         Category.objects.create(name='Backend', project=project)
 
-    def test_no_items_in_category(self):
+    def test_no_item(self):
+        """
+        Tests actual and estimated are 0 on an empty category
+        """
+
         category = Category.objects.get(name='Backend')
         self.assertEqual(category.items.all().count(), 0)
         self.assertEqual(category.actual, 0)
         self.assertEqual(category.estimated, 0)
 
-    def test_items_in_category(self):
-        category = Category.objects.get(name='Backend')
-        Item.objects.create(description='Models', actual=1, estimated=7, category=category)
-        Item.objects.create(description='Deployment', actual=5, estimated=15, category=category)
+    def test_add_item_updates_actual_estimated(self):
+        """
+        Tests actual and estimated updating when items are added to a category
+         """
 
-        self.assertEqual(category.items.all().count(), 2)
-        self.assertEqual(category.actual, 6)
-        self.assertEqual(category.estimated, 22)
-
-    def test_add_item_updates_actual_estimate(self):
         category = Category.objects.get(name='Backend')
         Item.objects.create(description='Project', actual=0, estimated=10, category=category)
         self.assertEqual(category.items.all().count(), 1)
@@ -34,3 +33,38 @@ class CategoryTestCase(TestCase):
         self.assertEqual(category.items.all().count(), 2)
         self.assertEqual(category.actual, 3)
         self.assertEqual(category.estimated, 25)
+
+
+class ProjectModelTestCases(TestCase):
+    def setUp(self):
+        Project.objects.create(name='My Project')
+
+    def test_no_categories(self):
+        """
+        Tests actual and estimated are 0 on an empty project
+        """
+
+        project = Project.objects.get(name='My Project')
+        self.assertEqual(project.categories.all().count(), 0)
+        self.assertEqual(project.actual, 0)
+        self.assertEqual(project.estimated, 0)
+
+    def test_add_categories_updates_actual_estimated(self):
+        """
+        Tests actual and estimated updating when categories are added to a project
+        """
+
+        project = Project.objects.get(name='My Project')
+        category_backend = Category.objects.create(name='Backend', project=project)
+        category_frontend = Category.objects.create(name='Frontend', project=project)
+
+        self.assertEqual(project.categories.count(), 2)
+        self.assertEqual(project.actual, 0)
+        self.assertEqual(project.estimated, 0)
+
+        Item.objects.create(description='Deployment', actual=5, estimated=20, category=category_backend)
+        Item.objects.create(description='User Page', actual=2, estimated=7, category=category_frontend)
+
+        self.assertEqual(project.categories.count(), 2)
+        self.assertEqual(project.actual, 7)
+        self.assertEqual(project.estimated, 27)
