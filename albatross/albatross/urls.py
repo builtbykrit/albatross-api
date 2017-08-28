@@ -19,5 +19,6 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^rest-auth/', include('rest_auth.urls')),
+    url(r'^api/v1/projects', include('projects.urls')),
     url(r'^', include('ember-web-app.urls')),
 ]

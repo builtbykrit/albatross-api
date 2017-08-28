@@ -1,4 +1,7 @@
 from django.test import TestCase
+from django.test import Client
+from django.urls import reverse
+import json
 
 from .models import Project, Category, Item
 
@@ -68,3 +71,22 @@ class ProjectModelTestCases(TestCase):
         self.assertEqual(project.categories.count(), 2)
         self.assertEqual(project.actual, 7)
         self.assertEqual(project.estimated, 27)
+
+
+class ProjectViewTests(TestCase):
+
+    def test_no_projects_response(self):
+        client = Client()
+        response = client.get(reverse('projects-list'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.content)
+        self.assertEqual(json_response['data'], [])
+
+    def test_one_project_response(self):
+        Project.objects.create(name='My Project')
+        client = Client()
+        response = client.get(reverse('projects-list'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.content)
+        print(json_response)
+        self.assertEqual(len(json_response['data']), 1)
