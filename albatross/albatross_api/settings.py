@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'rest_auth',
     'storages',
     'ember_web_app',
+    'authentication',
     'registration',
     'behave_django',
 ]
