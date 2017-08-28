@@ -1,6 +1,8 @@
 boto==2.48.0
 certifi==2017.7.27.1
 chardet==3.0.4
+coreapi==2.3.1
+coreschema==0.0.4
 Django==1.11.4
 django-rest-auth==0.9.1
 django-storages==1.6.5
@@ -9,8 +11,17 @@ djangorestframework-jsonapi==2.2.0
 gunicorn==19.7.1
 idna==2.6
 inflection==0.3.1
+itypes==1.1.0
+Jinja2==2.9.6
+Markdown==2.6.9
+MarkupSafe==1.0
 psycopg2==2.7.3
+Pygments==2.2.0
+python-http-client==3.0.0
 pytz==2017.2
 requests==2.18.4
+sendgrid==3.6.5
+sendgrid-django==4.0.4
 six==1.10.0
+uritemplate==3.0.0
 urllib3==1.22

@@ -19,6 +19,13 @@ test:
       && export DB_USER="ubuntu"
       && cd ./albatross
       && python ./manage.py test
+    - source ./environment_variables.sh
+      && export DB_HOST="127.0.0.1"
+      && export DB_NAME="circle_test"
+      && export DB_PORT=5432
+      && export DB_USER="ubuntu"
+      && cd ./albatross
+      && python ./manage.py behave
 
 deployment:
   master:

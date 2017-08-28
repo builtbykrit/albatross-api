@@ -30,6 +30,8 @@ sed -i -e "s#set('.*')#set('=\&;:%+~,*@!()/?[]')#" ./repo/lib/python3.X/site-pac
    d. Read the official [Django Rest Framework tutorial](http://www.django-rest-framework.org/tutorial/quickstart/)
    
    e. [django-tagging](https://github.com/Fantomas42/django-tagging) Is a good example Django app.
+
+   f. [This](http://www.cdrf.co/) is a good Django Rest Framework cheatsheet.
    
    Django doesn't neccessarily have a whole lot of magic but it is pretty opinonated, so it is important to understand the design philosophy behind it before you start programming with it.
    
