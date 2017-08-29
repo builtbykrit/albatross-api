@@ -25,7 +25,7 @@ SECRET_KEY = 'zre$(5&9ax$y_kcnm=q#ec9v8hz8t37=_*twb(_fo5dup31%%r'
 # SECURITY WARNING: don't run with debug turned on in production!
 CONFIG_NAME = os.environ.get('CONFIG_NAME')
 if CONFIG_NAME == 'production':
-    DEBUG = False
+    DEBUG = True
 else:
     DEBUG = False
 
