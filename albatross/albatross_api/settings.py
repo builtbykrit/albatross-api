@@ -27,7 +27,7 @@ CONFIG_NAME = os.environ.get('CONFIG_NAME')
 if CONFIG_NAME == 'production':
     DEBUG = True
 else:
-    DEBUG = False
+    DEBUG = True
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
