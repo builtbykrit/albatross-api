@@ -29,8 +29,13 @@ if CONFIG_NAME == 'production':
 else:
     DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1', '34.195.47.179',
-                 'getalbatross.com', 'localhost', 'www.getalbatross.com']
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    '34.195.47.179',
+    'getalbatross.com',
+    'localhost',
+    'www.getalbatross.com'
+]
 try:
     EC2_PRIVATE_IP = requests.get(
         'http://169.254.169.254/latest/meta-data/local-ipv4',
@@ -72,12 +77,13 @@ INSTALLED_APPS = [
 
 SITE_ID = 1 # For rest_auth.registration
 
+# TODO: Get CSRF working with Ember and add 'django.middleware.csrf.CsrfViewMiddleware', back here
 MIDDLEWARE = [
+    'albatross_api.middleware.DisableCSRF',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -169,12 +175,11 @@ STATIC_URL = '/static/'
 
 
 # Django CORS settings
+# TODO: Get CORS working on production without CORS_ORIGIN_ALLOW_ALL
 
-CORS_ORIGIN_WHITELIST = (
-    'getalbatross.com',
-    'localhost:4200', # Ember local dev
-    '127.0.0.1:4200', # Ember local dev
-)
+CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_URLS_REGEX = r'^/api/.*$'
 
 
 # Django Email settings
