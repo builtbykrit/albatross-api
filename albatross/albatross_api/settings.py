@@ -180,6 +180,7 @@ CORS_ORIGIN_WHITELIST = (
     'getalbatross.com',
     'localhost',
     'localhost:4200', # Ember local dev
+    'http://localhost:4200', # Ember local dev
     'www.getalbatross.com'
 )
 
