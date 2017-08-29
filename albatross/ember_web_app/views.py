@@ -26,9 +26,10 @@ def ember_web_app_view(request):
         if ('django.middleware.csrf.CsrfViewMiddleware'
                 in settings.MIDDLEWARE_CLASSES):
             start = index_html.index('</head>')
-            meta = '<meta name="X-CSRFToken" content="{}">'.format(
-                django.middleware.csrf.get_token(request)
-            )
+            meta = """
+                <meta name="csrf-token" content="{token}">
+                <meta name="X-CSRFToken" content="{token}">
+                """.format(token=django.middleware.csrf.get_token(request))
             index_html = index_html[start:] + meta + index_html[:start]
         return HttpResponse(index_html, content_type='text/html')
     except Exception as e:
