@@ -248,3 +248,49 @@ class CategoryViewTests(TestCase):
                                 )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Category.objects.get(id=category.id).name, 'Backend')
+
+
+class ItemViewTests(TestCase):
+    def setUp(self):
+        project = Project.objects.create(name='My Project')
+        category = Category.objects.create(name='Frontend', project=project)
+        Item.objects.create(description='Login', actual=5, estimated=20, category=category)
+
+    def test_create_item(self):
+        '''
+        POST /items
+        '''
+
+        client = Client()
+        category = Category.objects.get(name='Frontend')
+        data = {
+            'data': {
+                'attributes': {
+                    'description': 'Login',
+                    'estimated': 5,
+                    'actual': 0,
+                },
+                'relationships': {
+                    'category': {
+                        'data': {
+                            'id': category.id,
+                            'type': 'categories'
+                        }
+                    }
+                },
+                'type': 'items'
+            }
+        }
+        response = client.post(data=json.dumps(data),
+                               path=reverse('item-list'),
+                               content_type='application/vnd.api+json'
+                               )
+
+        print(response.content)
+        self.assertEqual(response.status_code, 201)
+        json_response = json.loads(response.content.decode('utf-8'))
+        item_data = json_response['data']
+        self.assertEqual(Item.objects.get(id=item_data['id']).description, 'Login')
+        self.assertEqual(category.items.all().count(), 2)
+        self.assertEqual(category.estimated, 25)
+        self.assertEqual(category.actual, 5)

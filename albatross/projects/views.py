@@ -1,6 +1,6 @@
 from rest_framework import viewsets, mixins
-from .models import Project, Category
-from .serializers import CategorySerializer, ProjectSerializer
+from .models import Category, Item, Project
+from .serializers import CategorySerializer, ItemSerializer, ProjectSerializer
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -20,3 +20,15 @@ class CategoryViewSet(mixins.CreateModelMixin,
     pagination_class = None
     serializer_class = CategorySerializer
     resource_name = 'categories'
+    included = ['items']
+
+
+class ItemViewSet(mixins.CreateModelMixin,
+                  mixins.RetrieveModelMixin,
+                  mixins.UpdateModelMixin,
+                  viewsets.GenericViewSet
+                  ):
+    queryset = Item.objects.all()
+    pagination_class = None
+    serializer_class = ItemSerializer
+    resource_name = 'items'

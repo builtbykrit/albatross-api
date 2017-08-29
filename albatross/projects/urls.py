@@ -1,14 +1,12 @@
 from rest_framework.routers import SimpleRouter
 from django.conf.urls import include, url
 
-from .views import ProjectViewSet, CategoryViewSet
+from .views import CategoryViewSet, ItemViewSet, ProjectViewSet
 
 router = SimpleRouter()
 router.register('projects', ProjectViewSet)
+router.register('categories', CategoryViewSet)
+router.register('items', ItemViewSet)
 
 
-urlpatterns = [
-        url(r'category/(?P<pk>[0-9]+)/$', CategoryViewSet.as_view({'get': 'retrieve',
-                                                                   'patch': 'partial_update'}), name='category-detail'),
-        url(r'^', include(router.urls)),
-]
+urlpatterns = router.urls

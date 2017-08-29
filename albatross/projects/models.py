@@ -41,9 +41,15 @@ class Category(CommonInfo):
         aggregate_results = self.items.aggregate(sum=Coalesce(Sum('estimated'), 0))
         return aggregate_results['sum']
 
+    class JSONAPIMeta:
+        resource_name = "categories"
+
 
 class Item(CommonInfo):
     actual = models.DecimalField(max_digits=7, decimal_places=1)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='items')
     description = models.CharField(max_length=200)
     estimated = models.DecimalField(max_digits=7, decimal_places=1)
+
+    class JSONAPIMeta:
+        resource_name = "items"
