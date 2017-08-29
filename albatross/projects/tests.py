@@ -251,10 +251,14 @@ class CategoryViewTests(TestCase):
 
 
 class ItemViewTests(TestCase):
+    CATEGORY_NAME = 'Frontend'
+    PROJECT_NAME = 'My Project'
+    ITEM_DESCRIPTION = 'Login'
+
     def setUp(self):
-        project = Project.objects.create(name='My Project')
-        category = Category.objects.create(name='Frontend', project=project)
-        Item.objects.create(description='Login', actual=5, estimated=20, category=category)
+        project = Project.objects.create(name=self.PROJECT_NAME)
+        category = Category.objects.create(name=self.CATEGORY_NAME, project=project)
+        Item.objects.create(description=self.ITEM_DESCRIPTION, actual=5, estimated=20, category=category)
 
     def test_create_item(self):
         '''
@@ -262,7 +266,7 @@ class ItemViewTests(TestCase):
         '''
 
         client = Client()
-        category = Category.objects.get(name='Frontend')
+        category = Category.objects.get(name=self.CATEGORY_NAME)
         data = {
             'data': {
                 'attributes': {
@@ -286,7 +290,6 @@ class ItemViewTests(TestCase):
                                content_type='application/vnd.api+json'
                                )
 
-        print(response.content)
         self.assertEqual(response.status_code, 201)
         json_response = json.loads(response.content.decode('utf-8'))
         item_data = json_response['data']
@@ -294,3 +297,64 @@ class ItemViewTests(TestCase):
         self.assertEqual(category.items.all().count(), 2)
         self.assertEqual(category.estimated, 25)
         self.assertEqual(category.actual, 5)
+
+    def test_change_item_description(self):
+        client = Client()
+        item = Item.objects.get(description=self.ITEM_DESCRIPTION)
+        data = {
+            'data': {
+                'id': item.id,
+                'attributes': {
+                    'description': 'Register'
+                },
+                'type': 'items'
+            }
+        }
+        response = client.patch(data=json.dumps(data),
+                                path=reverse('item-detail', args=(item.id,)),
+                                content_type='application/vnd.api+json'
+                                )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Item.objects.get(id=item.id).description, 'Register')
+
+    def test_change_item_actual(self):
+        client = Client()
+        item = Item.objects.get(description=self.ITEM_DESCRIPTION)
+        data = {
+            'data': {
+                'id': item.id,
+                'attributes': {
+                    'actual': 15
+                },
+                'type': 'items'
+            }
+        }
+        response = client.patch(data=json.dumps(data),
+                                path=reverse('item-detail', args=(item.id,)),
+                                content_type='application/vnd.api+json'
+                                )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Item.objects.get(id=item.id).actual, 15)
+        self.assertEqual(Category.objects.get(name=self.CATEGORY_NAME).actual, 15)
+        self.assertEqual(Project.objects.get(name=self.PROJECT_NAME).actual, 15)
+
+    def test_change_item_estimated(self):
+        client = Client()
+        item = Item.objects.get(description=self.ITEM_DESCRIPTION)
+        data = {
+            'data': {
+                'id': item.id,
+                'attributes': {
+                    'estimated': 30
+                },
+                'type': 'items'
+            }
+        }
+        response = client.patch(data=json.dumps(data),
+                                path=reverse('item-detail', args=(item.id,)),
+                                content_type='application/vnd.api+json'
+                                )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Item.objects.get(id=item.id).estimated, 30)
+        self.assertEqual(Category.objects.get(name=self.CATEGORY_NAME).estimated, 30)
+        self.assertEqual(Project.objects.get(name=self.PROJECT_NAME).estimated, 30)
