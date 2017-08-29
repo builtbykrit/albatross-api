@@ -124,7 +124,6 @@ class ProjectViewTests(TestCase):
         project_data = json_response['data']
         project_attributes = project_data['attributes']
         project_relationships = project_data['relationships']
-
         self.assertIn('categories', project_relationships)
         self.assertTrue(project_attributes['created_at'])
         self.assertTrue(project_attributes['updated_at'])
@@ -145,7 +144,7 @@ class ProjectViewTests(TestCase):
         '''
         PATCH /projects/:id
         '''
-        
+
         project = Project.objects.create(name='My Project')
         client = Client()
         data = {
@@ -163,3 +162,33 @@ class ProjectViewTests(TestCase):
                                 )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Project.objects.get(id=project.id).name, 'Albatross')
+
+class CategoryViewTests(TestCase):
+
+    def setUp(self):
+        project = Project.objects.create(name='My Project')
+        category = Category.objects.create(name='Frontend', project=project)
+        Item.objects.create(description='Login', actual=5, estimated=20, category=category)
+
+    def test_change_category_name(self):
+        '''
+        PATCH /categories/:id
+        '''
+
+        client = Client()
+        category = Category.objects.get(name='Frontend')
+        data = {
+            'data': {
+                'id': category.id,
+                'attributes': {
+                    'name': 'Backend'
+                },
+                'type': 'categories'
+            }
+        }
+        response = client.patch(data=json.dumps(data),
+                                path=reverse('category-detail', args=(category.id,)),
+                                content_type='application/vnd.api+json'
+                                )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Category.objects.get(id=category.id).name, 'Backend')
