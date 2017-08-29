@@ -1,5 +1,6 @@
 from django.test import TestCase
-from django.test import Client
+from django.contrib.auth.models import User
+from rest_framework.test import APITestCase, APIClient
 from django.urls import reverse
 import json
 
@@ -73,13 +74,43 @@ class ProjectModelTestCases(TestCase):
         self.assertEqual(project.estimated, 27)
 
 
-class ProjectViewTests(TestCase):
+class ProjectViewTests(APITestCase):
+    def setUp(self):
+        user = User.objects.create_user(
+            email='kehoffman3@gmail.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='kehoffman3@gmail.com'
+        )
+        self.client.force_authenticate(user=user)
+
+    def test_unauthenticated_user_projects_response(self):
+        client = APIClient()
+        response = client.get(reverse('project-list'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_unauthenticated_user_create_project_response(self):
+        client = APIClient()
+        data = {
+            'data': {
+                'attributes': {
+                    'name': 'My Project'
+                },
+                'type': 'projects'
+            }
+        }
+        response = client.post(data=json.dumps(data),
+                               path=reverse('project-list'),
+                               content_type='application/vnd.api+json'
+                               )
+        self.assertEqual(response.status_code, 403)
+
     def test_no_projects_response(self):
         '''
         GET /projects/
         '''
-        client = Client()
-        response = client.get(reverse('project-list'))
+        response = self.client.get(reverse('project-list'))
         self.assertEqual(response.status_code, 200)
         json_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(json_response['data'], [])
@@ -90,8 +121,8 @@ class ProjectViewTests(TestCase):
         '''
         Project.objects.create(name='My Project')
         Project.objects.create(name='Albatross')
-        client = Client()
-        response = client.get(reverse('project-list'))
+
+        response = self.client.get(reverse('project-list'))
         self.assertEqual(response.status_code, 200)
 
         json_response = json.loads(response.content.decode('utf-8'))
@@ -116,8 +147,7 @@ class ProjectViewTests(TestCase):
         Item.objects.create(description='Login', estimated=10, actual=2, category=category)
         Item.objects.create(description='Login', estimated=10, actual=3, category=category)
 
-        client = Client()
-        response = client.get(reverse('project-detail', args=(project.id,)))
+        response = self.client.get(reverse('project-detail', args=(project.id,)))
         self.assertEqual(response.status_code, 200)
 
         json_response = json.loads(response.content.decode('utf-8'))
@@ -139,12 +169,10 @@ class ProjectViewTests(TestCase):
         /GET projects/:id
         '''
 
-        client = Client()
-        response = client.get(reverse('project-detail', args=(1000,)))
+        response = self.client.get(reverse('project-detail', args=(1000,)))
         self.assertEqual(response.status_code, 404)
 
     def test_create_project(self):
-        client = Client()
         data = {
             'data': {
                 'attributes': {
@@ -153,10 +181,10 @@ class ProjectViewTests(TestCase):
                 'type': 'projects'
             }
         }
-        response = client.post(data=json.dumps(data),
-                               path=reverse('project-list'),
-                               content_type='application/vnd.api+json'
-                               )
+        response = self.client.post(data=json.dumps(data),
+                                    path=reverse('project-list'),
+                                    content_type='application/vnd.api+json'
+                                    )
         self.assertEqual(response.status_code, 201)
         json_response = json.loads(response.content.decode('utf-8'))
         project_data = json_response['data']
@@ -168,7 +196,6 @@ class ProjectViewTests(TestCase):
         '''
 
         project = Project.objects.create(name='My Project')
-        client = Client()
         data = {
             'data': {
                 'id': project.id,
@@ -178,26 +205,38 @@ class ProjectViewTests(TestCase):
                 'type': 'projects'
             }
         }
-        response = client.patch(data=json.dumps(data),
-                                path=reverse('project-detail', args=(project.id,)),
-                                content_type='application/vnd.api+json'
-                                )
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('project-detail', args=(project.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Project.objects.get(id=project.id).name, 'Albatross')
 
 
-class CategoryViewTests(TestCase):
+class CategoryViewTests(APITestCase):
     def setUp(self):
+        user = User.objects.create_user(
+            email='kehoffman3@gmail.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='kehoffman3@gmail.com'
+        )
+        self.client.force_authenticate(user=user)
         project = Project.objects.create(name='My Project')
         category = Category.objects.create(name='Frontend', project=project)
         Item.objects.create(description='Login', actual=5, estimated=20, category=category)
+
+    def test_unauthenticated_user_category_response(self):
+        client = APIClient()
+        response = client.get(reverse('category-detail', args=(1,)))
+        self.assertEqual(response.status_code, 403)
 
     def test_create_category(self):
         '''
         POST /categories
         '''
 
-        client = Client()
         project = Project.objects.get(name='My Project')
         data = {
             'data': {
@@ -215,10 +254,10 @@ class CategoryViewTests(TestCase):
                 'type': 'categories'
             }
         }
-        response = client.post(data=json.dumps(data),
-                               path=reverse('category-list'),
-                               content_type='application/vnd.api+json'
-                               )
+        response = self.client.post(data=json.dumps(data),
+                                    path=reverse('category-list'),
+                                    content_type='application/vnd.api+json'
+                                    )
 
         self.assertEqual(response.status_code, 201)
         json_response = json.loads(response.content.decode('utf-8'))
@@ -230,8 +269,6 @@ class CategoryViewTests(TestCase):
         '''
         PATCH /categories/:id
         '''
-
-        client = Client()
         category = Category.objects.get(name='Frontend')
         data = {
             'data': {
@@ -242,30 +279,42 @@ class CategoryViewTests(TestCase):
                 'type': 'categories'
             }
         }
-        response = client.patch(data=json.dumps(data),
-                                path=reverse('category-detail', args=(category.id,)),
-                                content_type='application/vnd.api+json'
-                                )
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('category-detail', args=(category.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Category.objects.get(id=category.id).name, 'Backend')
 
 
-class ItemViewTests(TestCase):
+class ItemViewTests(APITestCase):
     CATEGORY_NAME = 'Frontend'
     PROJECT_NAME = 'My Project'
     ITEM_DESCRIPTION = 'Login'
 
     def setUp(self):
+        user = User.objects.create_user(
+            email='kehoffman3@gmail.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='kehoffman3@gmail.com'
+        )
+        self.client.force_authenticate(user=user)
         project = Project.objects.create(name=self.PROJECT_NAME)
         category = Category.objects.create(name=self.CATEGORY_NAME, project=project)
         Item.objects.create(description=self.ITEM_DESCRIPTION, actual=5, estimated=20, category=category)
+
+    def test_unauthenticated_user_category_response(self):
+        client = APIClient()
+        response = client.get(reverse('item-detail', args=(1,)))
+        self.assertEqual(response.status_code, 403)
 
     def test_create_item(self):
         '''
         POST /items
         '''
 
-        client = Client()
         category = Category.objects.get(name=self.CATEGORY_NAME)
         data = {
             'data': {
@@ -285,10 +334,10 @@ class ItemViewTests(TestCase):
                 'type': 'items'
             }
         }
-        response = client.post(data=json.dumps(data),
-                               path=reverse('item-list'),
-                               content_type='application/vnd.api+json'
-                               )
+        response = self.client.post(data=json.dumps(data),
+                                    path=reverse('item-list'),
+                                    content_type='application/vnd.api+json'
+                                    )
 
         self.assertEqual(response.status_code, 201)
         json_response = json.loads(response.content.decode('utf-8'))
@@ -299,7 +348,6 @@ class ItemViewTests(TestCase):
         self.assertEqual(category.actual, 5)
 
     def test_change_item_description(self):
-        client = Client()
         item = Item.objects.get(description=self.ITEM_DESCRIPTION)
         data = {
             'data': {
@@ -310,15 +358,14 @@ class ItemViewTests(TestCase):
                 'type': 'items'
             }
         }
-        response = client.patch(data=json.dumps(data),
-                                path=reverse('item-detail', args=(item.id,)),
-                                content_type='application/vnd.api+json'
-                                )
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('item-detail', args=(item.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Item.objects.get(id=item.id).description, 'Register')
 
     def test_change_item_actual(self):
-        client = Client()
         item = Item.objects.get(description=self.ITEM_DESCRIPTION)
         data = {
             'data': {
@@ -329,17 +376,16 @@ class ItemViewTests(TestCase):
                 'type': 'items'
             }
         }
-        response = client.patch(data=json.dumps(data),
-                                path=reverse('item-detail', args=(item.id,)),
-                                content_type='application/vnd.api+json'
-                                )
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('item-detail', args=(item.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Item.objects.get(id=item.id).actual, 15)
         self.assertEqual(Category.objects.get(name=self.CATEGORY_NAME).actual, 15)
         self.assertEqual(Project.objects.get(name=self.PROJECT_NAME).actual, 15)
 
     def test_change_item_estimated(self):
-        client = Client()
         item = Item.objects.get(description=self.ITEM_DESCRIPTION)
         data = {
             'data': {
@@ -350,10 +396,10 @@ class ItemViewTests(TestCase):
                 'type': 'items'
             }
         }
-        response = client.patch(data=json.dumps(data),
-                                path=reverse('item-detail', args=(item.id,)),
-                                content_type='application/vnd.api+json'
-                                )
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('item-detail', args=(item.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Item.objects.get(id=item.id).estimated, 30)
         self.assertEqual(Category.objects.get(name=self.CATEGORY_NAME).estimated, 30)

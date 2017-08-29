@@ -1,14 +1,16 @@
-from rest_framework import viewsets, mixins
+from rest_framework import viewsets, mixins, permissions
 from .models import Category, Item, Project
 from .serializers import CategorySerializer, ItemSerializer, ProjectSerializer
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.all()
-    pagination_class = None
-    serializer_class = ProjectSerializer
-    resource_name = 'projects'
     included = ['categories']
+    pagination_class = None
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Project.objects.all()
+    resource_name = 'projects'
+    serializer_class = ProjectSerializer
+
 
 
 class CategoryViewSet(mixins.CreateModelMixin,
@@ -16,11 +18,13 @@ class CategoryViewSet(mixins.CreateModelMixin,
                       mixins.UpdateModelMixin,
                       viewsets.GenericViewSet
                       ):
-    queryset = Category.objects.all()
-    pagination_class = None
-    serializer_class = CategorySerializer
-    resource_name = 'categories'
     included = ['items']
+    pagination_class = None
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Category.objects.all()
+    resource_name = 'categories'
+    serializer_class = CategorySerializer
+
 
 
 class ItemViewSet(mixins.CreateModelMixin,
@@ -28,7 +32,9 @@ class ItemViewSet(mixins.CreateModelMixin,
                   mixins.UpdateModelMixin,
                   viewsets.GenericViewSet
                   ):
-    queryset = Item.objects.all()
     pagination_class = None
-    serializer_class = ItemSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Item.objects.all()
     resource_name = 'items'
+    serializer_class = ItemSerializer
+
