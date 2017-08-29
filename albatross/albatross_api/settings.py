@@ -66,7 +66,8 @@ INSTALLED_APPS = [
     'storages',
     'ember_web_app',
     'registration',
-    'projects'
+    'projects',
+    'django_extensions'
 ]
 
 SITE_ID = 1 # For rest_auth.registration

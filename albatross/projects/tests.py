@@ -74,13 +74,12 @@ class ProjectModelTestCases(TestCase):
 
 
 class ProjectViewTests(TestCase):
-
     def test_no_projects_response(self):
         '''
         GET /projects/
         '''
         client = Client()
-        response = client.get(reverse('projects-list'))
+        response = client.get(reverse('project-list'))
         self.assertEqual(response.status_code, 200)
         json_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(json_response['data'], [])
@@ -92,7 +91,7 @@ class ProjectViewTests(TestCase):
         Project.objects.create(name='My Project')
         Project.objects.create(name='Albatross')
         client = Client()
-        response = client.get(reverse('projects-list'))
+        response = client.get(reverse('project-list'))
         self.assertEqual(response.status_code, 200)
 
         json_response = json.loads(response.content.decode('utf-8'))
@@ -100,7 +99,7 @@ class ProjectViewTests(TestCase):
         project_data = json_response['data'][0]
         project_attributes = project_data['attributes']
 
-        #Assert the correct attributes are returned
+        # Assert the correct attributes are returned
         self.assertTrue(project_attributes['created_at'])
         self.assertTrue(project_attributes['updated_at'])
         self.assertTrue(project_attributes['name'])
@@ -118,7 +117,7 @@ class ProjectViewTests(TestCase):
         Item.objects.create(description='Login', estimated=10, actual=3, category=category)
 
         client = Client()
-        response = client.get(reverse('projects-detail', args=(project.id,)))
+        response = client.get(reverse('project-detail', args=(project.id,)))
         self.assertEqual(response.status_code, 200)
 
         json_response = json.loads(response.content.decode('utf-8'))
@@ -139,5 +138,28 @@ class ProjectViewTests(TestCase):
         '''
 
         client = Client()
-        response = client.get(reverse('projects-detail', args=(1000,)))
+        response = client.get(reverse('project-detail', args=(1000,)))
         self.assertEqual(response.status_code, 404)
+
+    def test_change_project_name(self):
+        '''
+        PATCH /projects/:id
+        '''
+        
+        project = Project.objects.create(name='My Project')
+        client = Client()
+        data = {
+            'data': {
+                'id': project.id,
+                'attributes': {
+                    'name': 'Albatross'
+                },
+                'type': 'projects'
+            }
+        }
+        response = client.patch(data=json.dumps(data),
+                                path=reverse('project-detail', args=(project.id,)),
+                                content_type='application/vnd.api+json'
+                                )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Project.objects.get(id=project.id).name, 'Albatross')
