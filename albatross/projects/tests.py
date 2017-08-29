@@ -73,6 +73,18 @@ class ProjectModelTestCases(TestCase):
         self.assertEqual(project.actual, 7)
         self.assertEqual(project.estimated, 27)
 
+    def test_change_buffer_updates_estimate(self):
+        project = Project.objects.get(name='My Project')
+        category_backend = Category.objects.create(name='Backend', project=project)
+        category_frontend = Category.objects.create(name='Frontend', project=project)
+
+        Item.objects.create(description='Deployment', actual=5, estimated=20, category=category_backend)
+        Item.objects.create(description='User Page', actual=2, estimated=7, category=category_frontend)
+
+        self.assertEqual(project.estimated, 27)
+        project.buffer = 20
+        self.assertEqual(project.estimated, 32)
+
 
 class ProjectViewTests(APITestCase):
     def setUp(self):
@@ -211,6 +223,36 @@ class ProjectViewTests(APITestCase):
                                      )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Project.objects.get(id=project.id).name, 'Albatross')
+
+    def test_change_project_buffer(self):
+        '''
+        PATCH /projects/:id
+        '''
+
+        project = Project.objects.create(name='My Project')
+        category = Category.objects.create(name='Design', project=project)
+        Item.objects.create(description='Login', estimated=10, actual=2, category=category)
+        Item.objects.create(description='Login', estimated=10, actual=3, category=category)
+
+        data = {
+            'data': {
+                'id': project.id,
+                'attributes': {
+                    'buffer': 15
+                },
+                'type': 'projects'
+            }
+        }
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('project-detail', args=(project.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
+        self.assertEqual(response.status_code, 200)
+        project = Project.objects.get(id=project.id)
+
+        self.assertEqual(project.buffer, 15)
+        self.assertEqual(project.estimated, 23)
+
 
 
 class CategoryViewTests(APITestCase):

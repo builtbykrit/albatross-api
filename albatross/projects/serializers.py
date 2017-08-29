@@ -41,7 +41,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ('id', 'name', 'estimated', 'categories', 'actual', 'created_at', 'updated_at')
+        fields = ('id', 'name', 'estimated', 'categories', 'actual', 'created_at', 'updated_at', 'buffer')
 
     class JSONAPIMeta:
         included_resources = ['categories']
