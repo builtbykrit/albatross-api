@@ -172,17 +172,9 @@ STATIC_URL = '/static/'
 
 
 # Django CORS settings
+# TODO: Get CORS working on production without CORS_ORIGIN_ALLOW_ALL
 
-CORS_ORIGIN_WHITELIST = (
-    '127.0.0.1',
-    '127.0.0.1:4200', # Ember local dev
-    '34.195.47.179',
-    'getalbatross.com',
-    'localhost',
-    'localhost:4200', # Ember local dev
-    'http://localhost:4200', # Ember local dev
-    'www.getalbatross.com'
-)
+CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_URLS_REGEX = r'^/api/.*$'
 
