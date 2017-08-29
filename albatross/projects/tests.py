@@ -76,16 +76,68 @@ class ProjectModelTestCases(TestCase):
 class ProjectViewTests(TestCase):
 
     def test_no_projects_response(self):
+        '''
+        GET /projects/
+        '''
         client = Client()
         response = client.get(reverse('projects-list'))
         self.assertEqual(response.status_code, 200)
-        json_response = json.loads(response.content)
+        json_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(json_response['data'], [])
 
-    def test_one_project_response(self):
+    def test_projects_response(self):
+        '''
+        GET /projects/
+        '''
         Project.objects.create(name='My Project')
+        Project.objects.create(name='Albatross')
         client = Client()
         response = client.get(reverse('projects-list'))
         self.assertEqual(response.status_code, 200)
-        json_response = json.loads(response.content)
-        self.assertEqual(len(json_response['data']), 1)
+
+        json_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(json_response['data']), 2)
+        project_data = json_response['data'][0]
+        project_attributes = project_data['attributes']
+
+        #Assert the correct attributes are returned
+        self.assertTrue(project_attributes['created_at'])
+        self.assertTrue(project_attributes['updated_at'])
+        self.assertTrue(project_attributes['name'])
+        self.assertEqual(project_attributes['estimated'], 0)
+        self.assertEqual(project_attributes['actual'], 0)
+
+    def test_get_one_project(self):
+        '''
+        GET /projects/:id
+        '''
+
+        project = Project.objects.create(name='My Project')
+        category = Category.objects.create(name='Design', project=project)
+        Item.objects.create(description='Login', estimated=10, actual=2, category=category)
+        Item.objects.create(description='Login', estimated=10, actual=3, category=category)
+
+        client = Client()
+        response = client.get(reverse('projects-detail', args=(project.id,)))
+        self.assertEqual(response.status_code, 200)
+
+        json_response = json.loads(response.content.decode('utf-8'))
+        project_data = json_response['data']
+        project_attributes = project_data['attributes']
+        project_relationships = project_data['relationships']
+
+        self.assertIn('categories', project_relationships)
+        self.assertTrue(project_attributes['created_at'])
+        self.assertTrue(project_attributes['updated_at'])
+        self.assertTrue(project_attributes['name'])
+        self.assertEqual(project_attributes['estimated'], 20)
+        self.assertEqual(project_attributes['actual'], 5)
+
+    def test_no_project_found(self):
+        '''
+        /GET projects/:id
+        '''
+
+        client = Client()
+        response = client.get(reverse('projects-detail', args=(1000,)))
+        self.assertEqual(response.status_code, 404)
