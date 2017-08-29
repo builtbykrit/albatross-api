@@ -77,6 +77,7 @@ SITE_ID = 1 # For rest_auth.registration
 
 # TODO: Get CSRF working with Ember and add 'django.middleware.csrf.CsrfViewMiddleware', back here
 MIDDLEWARE = [
+    'albatross_api.middleware.DisableCSRF',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
