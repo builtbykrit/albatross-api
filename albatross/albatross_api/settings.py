@@ -29,8 +29,13 @@ if CONFIG_NAME == 'production':
 else:
     DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1', '34.195.47.179',
-                 'getalbatross.com', 'localhost', 'www.getalbatross.com']
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    '34.195.47.179',
+    'getalbatross.com',
+    'localhost',
+    'www.getalbatross.com'
+]
 try:
     EC2_PRIVATE_IP = requests.get(
         'http://169.254.169.254/latest/meta-data/local-ipv4',
@@ -71,9 +76,9 @@ INSTALLED_APPS = [
 SITE_ID = 1 # For rest_auth.registration
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -169,10 +174,16 @@ STATIC_URL = '/static/'
 # Django CORS settings
 
 CORS_ORIGIN_WHITELIST = (
-    'getalbatross.com',
-    'localhost:4200', # Ember local dev
+    '127.0.0.1',
     '127.0.0.1:4200', # Ember local dev
+    '34.195.47.179',
+    'getalbatross.com',
+    'localhost',
+    'localhost:4200', # Ember local dev
+    'www.getalbatross.com'
 )
+
+CORS_URLS_REGEX = r'^/api/.*$'
 
 
 # Django Email settings
