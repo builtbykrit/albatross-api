@@ -14,10 +14,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import include, url
+from django.conf import settings
 
 urlpatterns = [
-    url(r'^registration/', include('registration.urls')),
-    url(r'^projects/', include('projects.urls')),
-    url(r'^', include('rest_auth.urls')),
+    url(r'^{}'.format(settings.ROOT_URLPREFIX),
+        include('authentication.urls')),
+    url(r'^{}registration/'.format(settings.ROOT_URLPREFIX),
+        include('registration.urls')),
+    url(r'^{}projects/'.format(settings.ROOT_URLPREFIX),
+        include('projects.urls')),
     url(r'^', include('ember_web_app.urls')),
 ]

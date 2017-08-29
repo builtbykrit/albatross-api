@@ -50,6 +50,7 @@ except requests.exceptions.RequestException:
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -60,11 +61,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'rest_auth',
+    'authentication',
+    'behave_django',
     'storages',
     'ember_web_app',
-    'projects',
     'registration',
-    'behave_django'
+    'projects'
 ]
 
 SITE_ID = 1 # For rest_auth.registration
@@ -72,6 +74,7 @@ SITE_ID = 1 # For rest_auth.registration
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -80,6 +83,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'albatross_api.urls'
+
+ROOT_URLPREFIX = 'api/v1/'
 
 TEMPLATES = [
     {
@@ -160,6 +165,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# Django CORS settings
+
+CORS_ORIGIN_WHITELIST = (
+    'getalbatross.com',
+    'localhost:4200', # Ember local dev
+    '127.0.0.1:4200', # Ember local dev
+)
 
 
 # Django Email settings
