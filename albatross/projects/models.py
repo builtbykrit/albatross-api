@@ -24,6 +24,8 @@ class Project(CommonInfo):
         aggregate_results = self.categories.aggregate(sum=Coalesce(Sum('items__estimated'), 0))
         return aggregate_results['sum']
 
+    class JSONAPIMeta:
+        resource_name = "projects"
 
 class Category(CommonInfo):
     name = models.CharField(max_length=200)

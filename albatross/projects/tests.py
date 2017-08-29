@@ -143,6 +143,25 @@ class ProjectViewTests(TestCase):
         response = client.get(reverse('project-detail', args=(1000,)))
         self.assertEqual(response.status_code, 404)
 
+    def test_create_project(self):
+        client = Client()
+        data = {
+            'data': {
+                'attributes': {
+                    'name': 'My Project'
+                },
+                'type': 'projects'
+            }
+        }
+        response = client.post(data=json.dumps(data),
+                               path=reverse('project-list'),
+                               content_type='application/vnd.api+json'
+                               )
+        self.assertEqual(response.status_code, 201)
+        json_response = json.loads(response.content.decode('utf-8'))
+        project_data = json_response['data']
+        self.assertEqual(Project.objects.get(id=project_data['id']).name, 'My Project')
+
     def test_change_project_name(self):
         '''
         PATCH /projects/:id
@@ -166,12 +185,46 @@ class ProjectViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Project.objects.get(id=project.id).name, 'Albatross')
 
-class CategoryViewTests(TestCase):
 
+class CategoryViewTests(TestCase):
     def setUp(self):
         project = Project.objects.create(name='My Project')
         category = Category.objects.create(name='Frontend', project=project)
         Item.objects.create(description='Login', actual=5, estimated=20, category=category)
+
+    def test_create_category(self):
+        '''
+        POST /categories
+        '''
+
+        client = Client()
+        project = Project.objects.get(name='My Project')
+        data = {
+            'data': {
+                'attributes': {
+                    'name': 'Design'
+                },
+                'relationships': {
+                    'project': {
+                        'data': {
+                            'id': project.id,
+                            'type': 'projects'
+                        }
+                    }
+                },
+                'type': 'categories'
+            }
+        }
+        response = client.post(data=json.dumps(data),
+                               path=reverse('category-list'),
+                               content_type='application/vnd.api+json'
+                               )
+
+        self.assertEqual(response.status_code, 201)
+        json_response = json.loads(response.content.decode('utf-8'))
+        category_data = json_response['data']
+        self.assertEqual(Category.objects.get(id=category_data['id']).name, 'Design')
+        self.assertEqual(project.categories.all().count(), 2)
 
     def test_change_category_name(self):
         '''
