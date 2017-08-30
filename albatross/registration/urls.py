@@ -2,5 +2,5 @@ from django.conf.urls import url
 from .views import UserRegistrationView
 
 urlpatterns = [
-    url(r'^$', UserRegistrationView.as_view(), name='rest_register'),
+    url(r'^$', UserRegistrationView.as_view(), name='registration'),
 ]

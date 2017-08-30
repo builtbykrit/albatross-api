@@ -45,6 +45,7 @@ class RegistrationTestCase(TestCase):
         assert 'email' in attributes
         assert 'first_name' in attributes
         assert 'last_name' in attributes
+        assert 'password'not in attributes
         assert attributes['email'] == self.ACCOUNT_INFO['email']
         assert attributes['first_name'] == self.ACCOUNT_INFO['first_name']
         assert attributes['last_name'] == self.ACCOUNT_INFO['last_name']
