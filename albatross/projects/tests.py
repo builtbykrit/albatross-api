@@ -253,6 +253,33 @@ class ProjectViewTests(APITestCase):
         self.assertEqual(project.buffer, 15)
         self.assertEqual(project.estimated, 23)
 
+    def test_project_categories_relationship(self):
+        """
+        Tests the categories relationship on project only returns categories that belong to a project
+        """
+
+        project1 = Project.objects.create(name='My Project')
+        project2 = Project.objects.create(name='My Other Project')
+        Category.objects.create(name='Design', project=project1)
+        Category.objects.create(name='Development', project=project1)
+        category_product = Category.objects.create(name='Product', project=project2)
+
+        response = self.client.get(reverse('project-list'))
+        self.assertEqual(response.status_code, 200)
+
+        json_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(json_response['data']), 2)
+        project1_data = json_response['data'][0]
+        project2_data = json_response['data'][1]
+
+        project1_relationships = project1_data['relationships']
+        project1_relationships_data = project1_relationships['categories']['data']
+        self.assertEqual(len(project1_relationships_data),2)
+
+        project2_relationships = project2_data['relationships']
+        project2_relationships_data = project2_relationships['categories']['data']
+        self.assertEqual(len(project2_relationships_data), 1)
+        self.assertEqual(int(project2_relationships_data[0]['id']), category_product.id)
 
 
 class CategoryViewTests(APITestCase):
