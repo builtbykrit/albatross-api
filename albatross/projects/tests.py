@@ -166,9 +166,7 @@ class ProjectViewTests(APITestCase):
         project_data = json_response['data']
         project_attributes = project_data['attributes']
         project_relationships = project_data['relationships']
-        project_included = json_response['included']
 
-        self.assertEqual(len(project_included), 1)
         self.assertIn('categories', project_relationships)
         self.assertTrue(project_attributes['created_at'])
         self.assertTrue(project_attributes['updated_at'])

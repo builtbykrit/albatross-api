@@ -29,9 +29,6 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ProjectSerializer(serializers.ModelSerializer):
-    included_serializers = {
-        'categories': CategorySerializer
-    }
 
     categories = ResourceRelatedField(
             queryset=Category.objects,
@@ -43,5 +40,3 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ('id', 'name', 'estimated', 'categories', 'actual', 'created_at', 'updated_at', 'buffer')
 
-    class JSONAPIMeta:
-        included_resources = ['categories']
