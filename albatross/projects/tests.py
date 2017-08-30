@@ -154,7 +154,7 @@ class ProjectViewTests(APITestCase):
         GET /projects/:id
         '''
 
-        project = Project.objects.create(name='My Project')
+        project = Project.objects.create(name='My Project', buffer=10)
         category = Category.objects.create(name='Design', project=project)
         Item.objects.create(description='Login', estimated=10, actual=2, category=category)
         Item.objects.create(description='Login', estimated=10, actual=3, category=category)
@@ -173,8 +173,9 @@ class ProjectViewTests(APITestCase):
         self.assertTrue(project_attributes['created_at'])
         self.assertTrue(project_attributes['updated_at'])
         self.assertTrue(project_attributes['name'])
-        self.assertEqual(project_attributes['estimated'], 20)
+        self.assertEqual(project_attributes['estimated'], 22)
         self.assertEqual(project_attributes['actual'], 5)
+        self.assertEqual(project_attributes['buffer'], 10)
 
     def test_no_project_found(self):
         '''
@@ -274,7 +275,7 @@ class ProjectViewTests(APITestCase):
 
         project1_relationships = project1_data['relationships']
         project1_relationships_data = project1_relationships['categories']['data']
-        self.assertEqual(len(project1_relationships_data),2)
+        self.assertEqual(len(project1_relationships_data), 2)
 
         project2_relationships = project2_data['relationships']
         project2_relationships_data = project2_relationships['categories']['data']
@@ -334,6 +335,34 @@ class CategoryViewTests(APITestCase):
         self.assertEqual(Category.objects.get(id=category_data['id']).name, 'Design')
         self.assertEqual(project.categories.all().count(), 2)
 
+    def test_get_one_category(self):
+        '''
+        GET /categories/:id
+        '''
+
+        project = Project.objects.create(name='My Project')
+        category = Category.objects.create(name='Development', project=project)
+        Item.objects.create(description='Login', estimated=10, actual=2, category=category)
+        Item.objects.create(description='Settings', estimated=10, actual=3, category=category)
+
+        response = self.client.get(reverse('category-detail', args=(category.id,)))
+        self.assertEqual(response.status_code, 200)
+
+        json_response = json.loads(response.content.decode('utf-8'))
+        category_data = json_response['data']
+        category_attributes = category_data['attributes']
+        category_relationships = category_data['relationships']
+        category_included = json_response['included']
+
+        self.assertEqual(len(category_included), 2)
+        self.assertIn('items', category_relationships)
+        self.assertEqual(len(category_relationships['items']['data']), 2)
+        self.assertTrue(category_attributes['created_at'])
+        self.assertTrue(category_attributes['updated_at'])
+        self.assertTrue(category_attributes['name'])
+        self.assertEqual(category_attributes['estimated'], 20)
+        self.assertEqual(category_attributes['actual'], 5)
+
     def test_change_category_name(self):
         '''
         PATCH /categories/:id
@@ -354,6 +383,36 @@ class CategoryViewTests(APITestCase):
                                      )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Category.objects.get(id=category.id).name, 'Backend')
+
+    def test_category_items_relationship(self):
+        """
+        Tests the items relationship on category only returns items that belong to a category
+        """
+
+        project = Project.objects.get(name='My Project')
+        category = Category.objects.create(name='Wireframes', project=project)
+        item_users = Item.objects.create(description='Users', estimated=3, actual=1, category=category)
+        item_settings = Item.objects.create(description='Settings', estimated=2, actual=1, category=category)
+
+        response = self.client.get(reverse('category-detail', args=(category.id,)))
+        self.assertEqual(response.status_code, 200)
+
+        json_response = json.loads(response.content.decode('utf-8'))
+        category_data = json_response['data']
+        category_included = json_response['included']
+        self.assertEqual(len(category_included), 2)
+
+        category_relationships = category_data['relationships']
+        category_relationships_data = category_relationships['items']['data']
+
+        self.assertEqual(len(category_relationships_data), 2)
+
+        ids = []
+        for item_data in category_relationships_data:
+            ids.append(int(item_data['id']))
+
+        self.assertIn(item_users.id, ids)
+        self.assertIn(item_settings.id, ids)
 
 
 class ItemViewTests(APITestCase):
