@@ -1,16 +1,22 @@
 from rest_framework import viewsets, mixins, permissions
 from .models import Category, Item, Project
 from .serializers import CategorySerializer, ItemSerializer, ProjectSerializer
-
+from teams.models import Team
 
 class ProjectViewSet(viewsets.ModelViewSet):
     included = ['categories']
     pagination_class = None
     permission_classes = (permissions.IsAuthenticated,)
-    queryset = Project.objects.all()
     resource_name = 'projects'
     serializer_class = ProjectSerializer
 
+    def perform_create(self, serializer):
+        team = Team.objects.get(creator=self.request.user)
+        serializer.save(team=team)
+
+    def get_queryset(self):
+        team = Team.objects.get(creator=self.request.user)
+        return team.projects.all()
 
 
 class CategoryViewSet(mixins.CreateModelMixin,

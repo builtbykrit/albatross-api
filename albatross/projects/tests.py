@@ -5,11 +5,12 @@ from django.urls import reverse
 import json
 
 from .models import Project, Category, Item
+from teams.models import Team
 
 
 class CategoryModelTestCase(TestCase):
     def setUp(self):
-        project = Project.objects.create(name='My Project')
+        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Krit'))
         Category.objects.create(name='Backend', project=project)
 
     def test_no_item(self):
@@ -41,7 +42,7 @@ class CategoryModelTestCase(TestCase):
 
 class ProjectModelTestCases(TestCase):
     def setUp(self):
-        Project.objects.create(name='My Project')
+        Project.objects.create(name='My Project', team=Team.objects.get(name='Krit'))
 
     def test_no_categories(self):
         """
@@ -95,6 +96,7 @@ class ProjectViewTests(APITestCase):
             password='password125',
             username='kehoffman3@gmail.com'
         )
+        Team.objects.create(name='Kritters', creator=user)
         self.client.force_authenticate(user=user)
 
     def test_unauthenticated_user_projects_response(self):
@@ -131,8 +133,8 @@ class ProjectViewTests(APITestCase):
         '''
         GET /projects/
         '''
-        Project.objects.create(name='My Project')
-        Project.objects.create(name='Albatross')
+        Project.objects.create(name='My Project', team=Team.objects.get(name='Kritters'))
+        Project.objects.create(name='Albatross', team=Team.objects.get(name='Kritters'))
 
         response = self.client.get(reverse('project-list'))
         self.assertEqual(response.status_code, 200)
@@ -149,12 +151,39 @@ class ProjectViewTests(APITestCase):
         self.assertEqual(project_attributes['estimated'], 0)
         self.assertEqual(project_attributes['actual'], 0)
 
+    def test_projects_response_only_returns_own_projects(self):
+        '''
+        GET /projects/
+        '''
+
+        user = User.objects.create_user(
+            email='austin@builtbykrit.com',
+            first_name='Austin',
+            last_name='Price',
+            password='password125',
+            username='austin@builtbykrit.com'
+        )
+        team = Team.objects.create(name='The Other Guys', creator=user)
+        Project.objects.create(name='New Project', team=team)
+        Project.objects.create(name='Albatross', team=team)
+
+        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Kritters'))
+
+        response = self.client.get(reverse('project-list'))
+        self.assertEqual(response.status_code, 200)
+
+        json_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(json_response['data']), 1)
+        project_data = json_response['data'][0]
+        project_attributes = project_data['attributes']
+        self.assertEqual(project_attributes['name'], project.name)
+
     def test_get_one_project(self):
         '''
         GET /projects/:id
         '''
 
-        project = Project.objects.create(name='My Project', buffer=10)
+        project = Project.objects.create(name='My Project', buffer=10, team=Team.objects.get(name='Kritters'))
         category = Category.objects.create(name='Design', project=project)
         Item.objects.create(description='Login', estimated=10, actual=2, category=category)
         Item.objects.create(description='Login', estimated=10, actual=3, category=category)
@@ -201,12 +230,19 @@ class ProjectViewTests(APITestCase):
         project_data = json_response['data']
         self.assertEqual(Project.objects.get(id=project_data['id']).name, 'My Project')
 
+        response_list = self.client.get(path=reverse('project-list'),
+                                        content_type='application/vnd.api+json')
+        self.assertEqual(response_list.status_code, 200)
+
+        json_response = json.loads(response_list.content.decode('utf-8'))
+        self.assertEqual(len(json_response['data']), 1)
+
     def test_change_project_name(self):
         '''
         PATCH /projects/:id
         '''
 
-        project = Project.objects.create(name='My Project')
+        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Kritters'))
         data = {
             'data': {
                 'id': project.id,
@@ -228,7 +264,7 @@ class ProjectViewTests(APITestCase):
         PATCH /projects/:id
         '''
 
-        project = Project.objects.create(name='My Project')
+        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Kritters'))
         category = Category.objects.create(name='Design', project=project)
         Item.objects.create(description='Login', estimated=10, actual=2, category=category)
         Item.objects.create(description='Login', estimated=10, actual=3, category=category)
@@ -257,8 +293,8 @@ class ProjectViewTests(APITestCase):
         Tests the categories relationship on project only returns categories that belong to a project
         """
 
-        project1 = Project.objects.create(name='My Project')
-        project2 = Project.objects.create(name='My Other Project')
+        project1 = Project.objects.create(name='My Project', team=Team.objects.get(name='Kritters'))
+        project2 = Project.objects.create(name='My Other Project', team=Team.objects.get(name='Kritters'))
         Category.objects.create(name='Design', project=project1)
         Category.objects.create(name='Development', project=project1)
         category_product = Category.objects.create(name='Product', project=project2)
@@ -268,8 +304,8 @@ class ProjectViewTests(APITestCase):
 
         json_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(json_response['data']), 2)
-        project1_data = json_response['data'][0]
-        project2_data = json_response['data'][1]
+        project2_data = json_response['data'][0]
+        project1_data = json_response['data'][1]
 
         project1_relationships = project1_data['relationships']
         project1_relationships_data = project1_relationships['categories']['data']
@@ -290,8 +326,9 @@ class CategoryViewTests(APITestCase):
             password='password125',
             username='kehoffman3@gmail.com'
         )
+        team = Team.objects.create(name='Kritters', creator=user)
         self.client.force_authenticate(user=user)
-        project = Project.objects.create(name='My Project')
+        project = Project.objects.create(name='My Project', team=team)
         category = Category.objects.create(name='Frontend', project=project)
         Item.objects.create(description='Login', actual=5, estimated=20, category=category)
 
@@ -338,7 +375,7 @@ class CategoryViewTests(APITestCase):
         GET /categories/:id
         '''
 
-        project = Project.objects.create(name='My Project')
+        project = Project.objects.get(name='My Project')
         category = Category.objects.create(name='Development', project=project)
         Item.objects.create(description='Login', estimated=10, actual=2, category=category)
         Item.objects.create(description='Settings', estimated=10, actual=3, category=category)
@@ -387,7 +424,7 @@ class CategoryViewTests(APITestCase):
         Tests the items relationship on category only returns items that belong to a category
         """
 
-        project = Project.objects.get(name='My Project')
+        project = Project.objects.get(name='My Project', team=Team.objects.get(name='Kritters'))
         category = Category.objects.create(name='Wireframes', project=project)
         item_users = Item.objects.create(description='Users', estimated=3, actual=1, category=category)
         item_settings = Item.objects.create(description='Settings', estimated=2, actual=1, category=category)
@@ -426,8 +463,9 @@ class ItemViewTests(APITestCase):
             password='password125',
             username='kehoffman3@gmail.com'
         )
+        team = Team.objects.create(name='Kritters', creator=user)
         self.client.force_authenticate(user=user)
-        project = Project.objects.create(name=self.PROJECT_NAME)
+        project = Project.objects.create(name=self.PROJECT_NAME, team=team)
         category = Category.objects.create(name=self.CATEGORY_NAME, project=project)
         Item.objects.create(description=self.ITEM_DESCRIPTION, actual=5, estimated=20, category=category)
 

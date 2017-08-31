@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.core.validators import MaxValueValidator, MinValueValidator
+from teams.models import Team
 
 
 class CommonInfo(models.Model):
@@ -15,6 +16,7 @@ class CommonInfo(models.Model):
 class Project(CommonInfo):
     buffer = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     name = models.CharField(max_length=200)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='projects')
 
     @property
     def actual(self):
@@ -25,11 +27,12 @@ class Project(CommonInfo):
     def estimated(self):
         aggregate_results = self.categories.aggregate(sum=Coalesce(Sum('items__estimated'), 0))
         sum = aggregate_results['sum']
-        estimated = sum * (1 + (self.buffer/100))
+        estimated = sum * (1 + (self.buffer / 100))
         return int(round(estimated))
 
     class JSONAPIMeta:
         resource_name = "projects"
+
 
 class Category(CommonInfo):
     name = models.CharField(max_length=200)
