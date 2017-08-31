@@ -8,7 +8,7 @@ from rest_framework.test import APITestCase, APIClient
 from teams.models import Team
 
 
-class RegistrationTestCase(TestCase):
+class LoginTestCase(TestCase):
     ACCOUNT_CREDENTIALS = {
         'email': 'bill@builtbykrit.com',
         'password': 'password125'
@@ -56,6 +56,20 @@ class RegistrationTestCase(TestCase):
         assert 'non_field_errors' in json_data
         assert json_data['non_field_errors'] == \
                ['Unable to log in with provided credentials.']
+
+
+class LogoutTestCase(APITestCase):
+    def test_logout(self):
+        user = User.objects.create_user(
+            email='kehoffman3@gmail.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='kehoffman3@gmail.com'
+        )
+        self.client.force_authenticate(user=user)
+        response = self.client.post(path=reverse('logout'))
+        self.assertEqual(response.status_code, 200)
 
 
 class GetUserTestCase(APITestCase):
