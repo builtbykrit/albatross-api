@@ -20,7 +20,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         try:
             membership = Membership.objects.get(user_id=self.request.user.id)
             return membership.team.projects.all()
-        except Team.DoesNotExist:
+        except Membership.DoesNotExist:
             return []
 
 
