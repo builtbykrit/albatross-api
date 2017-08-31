@@ -102,7 +102,7 @@ class ProjectViewTests(APITestCase):
     def test_unauthenticated_user_projects_response(self):
         client = APIClient()
         response = client.get(reverse('project-list'))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_unauthenticated_user_create_project_response(self):
         client = APIClient()
@@ -118,7 +118,7 @@ class ProjectViewTests(APITestCase):
                                path=reverse('project-list'),
                                content_type='application/vnd.api+json'
                                )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_no_projects_response(self):
         '''
@@ -335,7 +335,7 @@ class CategoryViewTests(APITestCase):
     def test_unauthenticated_user_category_response(self):
         client = APIClient()
         response = client.get(reverse('category-detail', args=(1,)))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_create_category(self):
         '''
@@ -472,7 +472,7 @@ class ItemViewTests(APITestCase):
     def test_unauthenticated_user_category_response(self):
         client = APIClient()
         response = client.get(reverse('item-detail', args=(1,)))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_create_item(self):
         '''
