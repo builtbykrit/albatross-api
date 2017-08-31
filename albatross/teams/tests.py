@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase, APIClient
 from teams.models import Team
 
 
-class TeamViewTestCase(APITestCase):
+class TeamViewsTestCase(APITestCase):
     TEAM_INFO = {
         'name': 'The A Team'
     }
@@ -95,4 +95,31 @@ class TeamViewTestCase(APITestCase):
         )
 
         response = client.get(reverse('teams-detail', args=(team.id,)))
+        self.assertEqual(response.status_code, 403)
+
+    def test_invite_to_team(self):
+        team = Team.objects.create(
+            creator=self.user,
+            name=self.TEAM_INFO['name']
+        )
+
+        data = {'email':'bill@builtbykrit.com'}
+        response = self.client.post(data=json.dumps(data),
+                                    path=reverse('teams-invite-user', args=(team.id,)),
+                                    content_type='application/json')
+        print(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 204)
+
+    def test_invite_to_team_while_unauthenticated(self):
+        client = APIClient()
+
+        team = Team.objects.create(
+            creator=self.user,
+            name=self.TEAM_INFO['name']
+        )
+
+        data = {'email':'bill@builtbykrit.com'}
+        response = client.post(data=json.dumps(data),
+                               path=reverse('teams-invite-user', args=(team.id,)),
+                               content_type='application/json')
         self.assertEqual(response.status_code, 403)

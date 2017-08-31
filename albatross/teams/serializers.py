@@ -15,9 +15,6 @@ UserModel.JSONAPIMeta = UserJSONAPIMeta
 
 
 class UserSerializer(serializers.ModelSerializer):
-    def __init__(self, *args, **kwargs):
-        super(UserSerializer, self).__init__(*args, **kwargs)
-
     class Meta:
         model = UserModel
         fields = '__all__'
