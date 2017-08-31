@@ -69,6 +69,7 @@ def step_impl(context):
     assert 'email' in attributes
     assert 'first_name' in attributes
     assert 'last_name' in attributes
+    assert 'password'not in attributes
     assert attributes['email'] == context.account_info['email']
     assert attributes['first_name'] == context.account_info['first_name']
     assert attributes['last_name'] == context.account_info['last_name']
