@@ -71,6 +71,8 @@ INSTALLED_APPS = [
     'storages',
     'ember_web_app',
     'registration',
+    'invitations',
+    'teams',
     'projects',
     'django_extensions'
 ]
