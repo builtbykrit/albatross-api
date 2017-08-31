@@ -6,6 +6,8 @@ from rest_auth.views import LoginView as RestAuthLoginView
 from rest_auth.views import LogoutView as RestAuthLogoutView
 from rest_auth.views import UserDetailsView as RestAuthUserView
 
+from .serializers import UserSerializer
+
 
 class LoginView(RestAuthLoginView):
     renderer_classes = (JSONRenderer,)
@@ -18,3 +20,4 @@ class LogoutView(RestAuthLogoutView):
 class UserView(RestAuthUserView):
     renderer_classes = (JSONAPIRenderer,)
     parser_classes = (JSONAPIParser,)
+    serializer_class = UserSerializer
