@@ -9,7 +9,7 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('albatross.invitations', '0001_initial'),
+        ('invitations', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ('state', models.CharField(max_length=20, verbose_name='state', choices=[(b'invited', 'invited'), (b'joined', 'joined')])),
                 ('role', models.CharField(default=b'member', max_length=20, verbose_name='role', choices=[(b'member', 'member'), (b'owner', 'owner')])),
                 ('created_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='created')),
-                ('invite', models.ForeignKey(related_name=b'memberships', verbose_name='invite', blank=True, to='albatross.invitations.JoinInvitation', null=True)),
+                ('invite', models.ForeignKey(related_name=b'memberships', verbose_name='invite', blank=True, to='invitations.Invitation', null=True)),
             ],
             options={
                 'verbose_name': 'Team',

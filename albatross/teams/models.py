@@ -1,25 +1,18 @@
-from albatross.invitations.models import Invitation
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.core.urlresolvers import reverse
 from django.utils import timezone
+from invitations.models import Invitation
 
 from . import signals
 from .conf import settings
 from .hooks import hookset
 
 
-class Membership(models.Model):
+class BaseMembership(models.Model):
     created_at = models.DateTimeField(default=timezone.now,
                                       editable=False,
                                       verbose_name="created at")
-
-    invite = models.ForeignKey(Invitation,
-                               related_name="memberships",
-                               null=True,
-                               blank=True,
-                               verbose_name=_("invite"))
 
     ROLE_MEMBER = "member"
     ROLE_OWNER = "owner"
@@ -43,36 +36,24 @@ class Membership(models.Model):
         choices=STATE_CHOICES,
         verbose_name="state")
 
-    team = models.ForeignKey(Team,
-                             related_name="memberships",
-                             verbose_name="team")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             related_name="memberships",
-                             null=True,
-                             blank=True,
-                             verbose_name="user")
-
-    def __str__(self):
-        return "{0} in {1}".format(self.user, self.team)
-
     class Meta:
-        unique_together = [("team", "user", "invite")]
-        verbose_name = "Membership"
-        verbose_name_plural = "Memberships"
+        abstract = True
+        verbose_name = "Base Membership"
+        verbose_name_plural = "Bases Memberships"
 
     @property
     def invitee(self):
         return self.user or self.invite.to_user_email()
 
-    def accept(self, by):
-        self.state = Membership.STATE_JOINED
+    def accept(self):
+        self.state = BaseMembership.STATE_JOINED
         self.save()
 
     def is_member(self):
-        return self.role == Membership.ROLE_MEMBER
+        return self.role == BaseMembership.ROLE_MEMBER
 
     def is_owner(self):
-        return self.role == Membership.ROLE_OWNER
+        return self.role == BaseMembership.ROLE_OWNER
 
     def status(self):
         if self.user:
@@ -82,7 +63,76 @@ class Membership(models.Model):
         return "Unknown"
 
 
-class Team(models.Model):
+class BaseTeam(models.Model):
+    class Meta:
+        abstract = True
+        verbose_name = "Base Team"
+        verbose_name_plural = "Bases Teams"
+
+    @property
+    def acceptances(self):
+        return self.memberships.filter(state=BaseMembership.STATE_JOINED)
+
+    @property
+    def invitees(self):
+        return self.memberships.filter(state=BaseMembership.STATE_INVITED)
+
+    @property
+    def members(self):
+        return self.acceptances.filter(role=BaseMembership.ROLE_MEMBER)
+
+    @property
+    def owners(self):
+        return self.acceptances.filter(role=BaseMembership.ROLE_OWNER)
+
+    def can_join(self, user):
+        if self.state_for(user) == BaseMembership.STATE_INVITED:
+            return True
+        else:
+            return False
+
+    def is_member(self, user):
+        return self.members.filter(user=user).exists()
+
+    def is_owner(self, user):
+        return self.owners.filter(user=user).exists()
+
+    def is_on_team(self, user):
+        return self.acceptances.filter(user=user).exists()
+
+    def invite_user(self, from_user, to_email,
+                    role=BaseMembership.ROLE_MEMBER, message=None):
+        if not Invitation.objects.filter(signup_code__email=to_email).exists():
+            invite = Invitation.invite(from_user, to_email,
+                                       message, send=False)
+            membership, created = self.memberships.get_or_create(
+                invite=invite,
+                defaults={"role": role, "state": BaseMembership.STATE_INVITED}
+            )
+            invite.send_invite()
+            signals.invited_user.send(sender=self, membership=membership)
+            return membership
+
+    def role_for(self, user):
+        if hookset.user_is_staff(user):
+            return BaseMembership.ROLE_MANAGER
+
+        membership = self.for_user(user)
+        if membership:
+            return membership.role
+
+    def state_for(self, user):
+        membership = self.for_user(user=user)
+        if membership:
+            return membership.state
+
+    def team_for(self, user):
+        try:
+            return self.memberships.get(user=user)
+        except ObjectDoesNotExist:
+            pass
+
+class Team(BaseTeam):
     name = models.CharField(max_length=100, verbose_name="name")
     created_at = models.DateTimeField(default=timezone.now,
                                       editable=False,
@@ -105,71 +155,27 @@ class Team(models.Model):
         self.full_clean()
         super(Team, self).save(*args, **kwargs)
 
-    @property
-    def acceptances(self):
-        return self.memberships.filter(state=Membership.STATE_JOINED)
 
-    @property
-    def invitees(self):
-        return self.memberships.filter(state=Membership.STATE_INVITED)
+class Membership(BaseMembership):
+    invite = models.ForeignKey(Invitation,
+                               related_name="memberships",
+                               null=True,
+                               blank=True,
+                               verbose_name="invite")
 
-    @property
-    def members(self):
-        return self.acceptances.filter(role=Membership.ROLE_MEMBER)
+    team = models.ForeignKey(Team,
+                             related_name="memberships",
+                             verbose_name="team")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             related_name="memberships",
+                             null=True,
+                             blank=True,
+                             verbose_name="user")
 
-    @property
-    def owners(self):
-        return self.acceptances.filter(role=Membership.ROLE_OWNER)
+    def __str__(self):
+        return "{0} in {1}".format(self.user, self.team)
 
-    def can_join(self, user):
-        if self.state_for(user) == Membership.STATE_INVITED:
-            return True
-        else:
-            return False
-
-    def is_member(self, user):
-        return self.members.filter(user=user).exists()
-
-    def is_owner(self, user):
-        return self.owners.filter(user=user).exists()
-
-    def is_on_team(self, user):
-        return self.acceptances.filter(user=user).exists()
-
-    def invite_user(self, from_user, to_email,
-                    role=Membership.ROLE_MEMBER, message=None):
-        if not Invitation.objects.filter(signup_code__email=to_email).exists():
-            invite = Invitation.invite(from_user, to_email,
-                                       message, send=False)
-            membership, created = self.memberships.get_or_create(
-                invite=invite,
-                defaults={"role": role, "state": Membership.STATE_INVITED}
-            )
-            invite.send_invite()
-            signals.invited_user.send(sender=self, membership=membership)
-            return membership
-
-    def role_for(self, user):
-        if hookset.user_is_staff(user):
-            return Membership.ROLE_MANAGER
-
-        membership = self.for_user(user)
-        if membership:
-            return membership.role
-
-    def state_for(self, user):
-        membership = self.for_user(user=user)
-        if membership:
-            return membership.state
-
-    def team_for(self, user):
-        try:
-            return self.memberships.get(user=user)
-        except ObjectDoesNotExist:
-            pass
-
-
-
-
-
-
+    class Meta:
+        unique_together = [("team", "user", "invite")]
+        verbose_name = "Membership"
+        verbose_name_plural = "Memberships"

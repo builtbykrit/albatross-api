@@ -71,6 +71,8 @@ INSTALLED_APPS = [
     'storages',
     'ember_web_app',
     'registration',
+    'invitations',
+    'teams',
 ]
 
 SITE_ID = 1 # For rest_auth.registration

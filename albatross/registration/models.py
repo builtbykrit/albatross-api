@@ -25,7 +25,9 @@ class SignupCode(models.Model):
     code = models.CharField("code", max_length=64, unique=True)
     created = models.DateTimeField("created", default=timezone.now, editable=False)
     email = models.EmailField(max_length=254, blank=True)
-    inviter = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE)
+    inviter = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                null=True, blank=True,
+                                on_delete=models.CASCADE)
     sent = models.DateTimeField("sent", null=True, blank=True)
 
     class Meta:
@@ -62,6 +64,8 @@ class SignupCode(models.Model):
         }
         if email:
             params["email"] = email
+        if kwargs.get("inviter", None):
+            params["inviter"] = kwargs.get("inviter")
         return cls(**params)
 
     @classmethod
@@ -97,7 +101,6 @@ class SignupCode(models.Model):
             signup_url = kwargs["signup_url"]
         ctx = {
             "current_site": current_site,
-            "inviter_name": self.inviter.get_full_name(),
             "signup_code": self,
             "signup_url": signup_url,
         }
@@ -113,7 +116,3 @@ class SignupCodeResult(models.Model):
     signup_code = models.ForeignKey(SignupCode, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(default=timezone.now)
-
-    def save(self, **kwargs):
-        super(SignupCodeResult, self).save(**kwargs)
-        self.signup_code.calculate_use_count()

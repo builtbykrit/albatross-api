@@ -1,16 +1,15 @@
-from albatross.invitations.signals import invite_accepted
-
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from invitations.signals import invite_accepted
 
 from .models import Team, Membership
 
 
 @receiver(post_save, sender=Team)
 def handle_team_save(sender, **kwargs):
-    created_at = kwargs.pop("created_at")
+    created = kwargs.pop("created")
     team = kwargs.pop("instance")
-    if created_at:
+    if created:
         team.memberships.get_or_create(
             user=team.creator,
             defaults={

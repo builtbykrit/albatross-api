@@ -8,11 +8,11 @@ from .conf import settings
 
 MESSAGE_STRINGS = {
     "duplicate_email": "Another user is already registered using that email.",
-    "invalid_signup_code": "That is not a valid signup code",
+    "invalid_signup_code": "That signup code is invalid.",
 }
 
 
-class AccountDefaultHookSet(object):
+class RegistrationDefaultHookSet(object):
 
     @staticmethod
     def generate_random_token(extra=None, hash_func=hashlib.sha256):
@@ -27,12 +27,20 @@ class AccountDefaultHookSet(object):
             extra.append(email)
         return self.generate_random_token(extra)
 
+    def get_message_strings(self):
+        return MESSAGE_STRINGS
+
     @staticmethod
     def send_invitation_email(to, ctx):
         # Using https://github.com/elbuo8/sendgrid-django
+        signup_code = ctx["signup_code"]
+        if signup_code.inviter:
+            subject = "{} has invited to join an Albatross team".format(
+              signup_code.inviter.get_full_name())
+        else:
+            subject = "You've been invited to join an Albatross team"
         mail = EmailMultiAlternatives(
-          subject="{} has invited to join an Albatross team".format(
-              ctx["inviter_name"]),
+          subject=subject,
           body="",
           from_email="Andrew Askins <andrew@builtbykrit.com>",
           to=[to],
@@ -45,7 +53,7 @@ class AccountDefaultHookSet(object):
 class HookProxy(object):
 
     def __getattr__(self, attr):
-        return getattr(settings.ACCOUNT_HOOKSET, attr)
+        return getattr(settings.REGISTRATION_HOOKSET, attr)
 
 
 hookset = HookProxy()

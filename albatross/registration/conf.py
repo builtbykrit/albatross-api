@@ -28,7 +28,7 @@ class RegistrationConfig(AppConf):
     label = "registration"
     verbose_name = "registration"
 
-    HOOKSET = "account.hooks.AccountDefaultHookSet"
+    HOOKSET = "registration.hooks.RegistrationDefaultHookSet"
 
     def configure_hookset(self, value):
         return load_path_attr(value)()
