@@ -73,6 +73,8 @@ INSTALLED_APPS = [
     'registration',
     'invitations',
     'teams',
+    'projects',
+    'django_extensions'
 ]
 
 SITE_ID = 1 # For rest_auth.registration
