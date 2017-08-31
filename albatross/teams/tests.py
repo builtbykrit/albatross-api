@@ -74,7 +74,7 @@ class TeamViewsTestCase(APITestCase):
     def test_create_team_while_unauthenticated(self):
         client = APIClient()
         response = self.create_team(client=client)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_get_team(self):
         team = Team.objects.create(
@@ -95,7 +95,7 @@ class TeamViewsTestCase(APITestCase):
         )
 
         response = client.get(reverse('teams-detail', args=(team.id,)))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_invite_to_team(self):
         team = Team.objects.create(
@@ -122,4 +122,4 @@ class TeamViewsTestCase(APITestCase):
         response = client.post(data=json.dumps(data),
                                path=reverse('teams-invite-user', args=(team.id,)),
                                content_type='application/json')
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
