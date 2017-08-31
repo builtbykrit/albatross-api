@@ -95,6 +95,8 @@ ROOT_URLCONF = 'albatross_api.urls'
 
 ROOT_URLPREFIX = 'api/v1/'
 
+REST_SESSION_LOGIN = True
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
