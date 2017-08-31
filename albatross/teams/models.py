@@ -36,6 +36,9 @@ class BaseMembership(models.Model):
         choices=STATE_CHOICES,
         verbose_name="state")
 
+    class JSONAPIMeta:
+        resource_name = "memberships"
+
     class Meta:
         abstract = True
         verbose_name = "Base Membership"
@@ -64,6 +67,9 @@ class BaseMembership(models.Model):
 
 
 class BaseTeam(models.Model):
+    class JSONAPIMeta:
+        resource_name = "teams"
+
     class Meta:
         abstract = True
         verbose_name = "Base Team"

@@ -22,6 +22,7 @@ class RegistrationTestCase(TestCase):
         assert 'attributes' in data
         assert 'id' in data
         assert 'type' in data
+        assert data['type'] == 'users'
 
         attributes = data['attributes']
         assert 'date_joined' in attributes

@@ -3,10 +3,21 @@ from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
 from .models import Membership, Team
 
+
 UserModel = get_user_model()
 
 
+# Monkey patch the JSONAPIMeta class onto whatever
+# UserModel we are using.
+class UserJSONAPIMeta:
+        resource_name = "users"
+UserModel.JSONAPIMeta = UserJSONAPIMeta
+
+
 class UserSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        super(UserSerializer, self).__init__(*args, **kwargs)
+
     class Meta:
         model = UserModel
         fields = '__all__'
@@ -36,7 +47,7 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 class TeamSerializer(serializers.ModelSerializer):
     included_serializers = {
-        'members': MembershipSerializer
+        'memberships': MembershipSerializer
     }
 
     memberships = ResourceRelatedField(
@@ -51,3 +62,9 @@ class TeamSerializer(serializers.ModelSerializer):
 
     class JSONAPIMeta:
         included_resources = ['memberships']
+
+    def create(self, validated_data):
+        team = Team(creator=validated_data['user'],
+                    name=validated_data['name'])
+        team.save()
+        return team
