@@ -1,8 +1,10 @@
 from django.conf.urls import url
-from .views import TeamListCreateView, TeamInviteView
+from .views import TeamCreateView, TeamInviteView, TeamRetrieveView
 
 urlpatterns = [
-    url(r'^$', TeamListCreateView.as_view(), name='teams'),
-    url(r"^teams/(?P<pk>[0-9]+)/invite-user/$", TeamInviteView.as_view(),
-        name="teams_invite_user"),
+    url(r'^$', TeamCreateView.as_view(), name="teams-create"),
+    url(r"^(?P<pk>[0-9]+)/$", TeamRetrieveView.as_view(), name="teams-detail"),
+    url(r"^(?P<pk>[0-9]+)/invite-user/$",
+        TeamInviteView.as_view(),
+        name="teams-invite-user"),
 ]

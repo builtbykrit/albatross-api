@@ -20,8 +20,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             },
         } # write_only_fields were removed from DRF as of 3.2
 
-    @staticmethod
-    def create(validated_data):
+    def create(self, validated_data):
         user = UserModel(email=validated_data['email'],
                          first_name=validated_data['first_name'],
                          last_name=validated_data['last_name'],
@@ -30,7 +29,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-    @staticmethod
-    def validate_password(password):
+    def validate_password(self, password):
         _validate_password(password)
         return password

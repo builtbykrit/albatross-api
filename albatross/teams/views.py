@@ -1,15 +1,15 @@
-from albatross.invitations.serializers import InvitationSerializer
+from invitations.serializers import InvitationSerializer
 
-from django.contrib.auth import get_user_model
-from rest_framework import permissions, status
-from rest_framework.generics import GenericAPIView, ListCreateAPIView
+from rest_framework import parsers, permissions, renderers, status
+from rest_framework.generics import CreateAPIView, \
+    GenericAPIView, RetrieveAPIView
 from rest_framework.response import Response
 
-from .models import Membership, Team
+from .models import Team
 from .serializers import TeamSerializer
 
 
-class TeamListCreateView(ListCreateAPIView):
+class TeamCreateView(CreateAPIView):
     included = ['memberships']
     pagination_class = None
     permission_classes = (permissions.IsAuthenticated,)
@@ -17,39 +17,38 @@ class TeamListCreateView(ListCreateAPIView):
     resource_name = 'teams'
     serializer_class = TeamSerializer
 
-    # def create(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     self.perform_create(serializer)
-    #
-    #     team = serializer.instance
-    #     team.memberships.get_or_create(
-    #         user=team.creator,
-    #         defaults={
-    #             "role": Membership.ROLE_OWNER,
-    #             "state": Membership.STATE_JOINED
-    #         }
-    #     )
-    #     serializer = self.get_serializer(team)
-    #
-    #     headers = self.get_success_headers(serializer.data)
-    #     return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.validated_data['user'] = self.request.user
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class TeamInviteView(GenericAPIView):
+    parser_classes = (parsers.JSONParser,)
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = Team.objects.all()
+    serializer_class = InvitationSerializer
 
-    def post(self, request, format=None):
-        team = self.get_object()
-        serializer = InvitationSerializer(request.data)
+    def post(self, request, *args, **kwargs):
+        serializer = InvitationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
+        team = self.get_object()
         team.invite_user(from_user=self.request.user,
                          to_email=serializer.validated_data['email'])
-
-        # Add User to Team
-        # Send Invitation
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class TeamRetrieveView(RetrieveAPIView):
+    included = ['memberships']
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Team.objects.all()
+    resource_name = 'teams'
+    serializer_class = TeamSerializer
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
