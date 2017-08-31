@@ -1,9 +1,11 @@
 from rest_framework import viewsets, mixins, permissions
+from rest_framework.authentication import TokenAuthentication
 from .models import Category, Item, Project
 from .serializers import CategorySerializer, ItemSerializer, ProjectSerializer
-from teams.models import Team
+from teams.models import Team, Membership
 
 class ProjectViewSet(viewsets.ModelViewSet):
+    authentication_classes = (TokenAuthentication,)
     included = ['categories']
     pagination_class = None
     permission_classes = (permissions.IsAuthenticated,)
@@ -11,12 +13,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
 
     def perform_create(self, serializer):
-        team = Team.objects.get(creator=self.request.user)
-        serializer.save(team=team)
+        membership = Membership.objects.get(user_id=self.request.user.id)
+        serializer.save(team=membership.team)
 
     def get_queryset(self):
-        team = Team.objects.get(creator=self.request.user)
-        return team.projects.all()
+        try:
+            membership = Membership.objects.get(user_id=self.request.user.id)
+            return membership.team.projects.all()
+        except Team.DoesNotExist:
+            return []
 
 
 class CategoryViewSet(mixins.CreateModelMixin,
