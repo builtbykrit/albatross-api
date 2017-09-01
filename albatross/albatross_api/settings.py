@@ -216,6 +216,13 @@ REST_FRAMEWORK = {
 }
 
 
+# Django Rest Auth Settings
+
+LOGOUT_ON_PASSWORD_CHANGE = False
+
+OLD_PASSWORD_FIELD_ENABLED = True
+
+
 # Django Storages Settings
 
 AWS_ACCESS_KEY_ID = os.environ.get('S3_API_KEY')
