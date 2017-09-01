@@ -2,8 +2,11 @@ import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework.test import APITestCase, APIClient
 from teams.models import Team
 
@@ -25,12 +28,10 @@ class LoginTestCase(TestCase):
 
     def login(self, account_credentials):
         client = Client()
-        header = {'Accept':'application/json'}
-        url = '/{}login/'.format(
-            settings.ROOT_URLPREFIX if settings.ROOT_URLPREFIX else '')
-        return client.post(url,
+        header = {'Accept': 'application/json'}
+        return client.post(path=reverse('login'),
                            content_type='application/json',
-                           data = json.dumps(account_credentials),
+                           data=json.dumps(account_credentials),
                            **header)
 
     def test_login(self):
@@ -55,7 +56,7 @@ class LoginTestCase(TestCase):
         json_data = json.loads(response.content.decode('utf-8'))
         assert 'non_field_errors' in json_data
         assert json_data['non_field_errors'] == \
-               ['Unable to log in with provided credentials.']
+            ['Unable to log in with provided credentials.']
 
 
 class LogoutTestCase(APITestCase):
@@ -145,3 +146,119 @@ class GetUserTestCase(APITestCase):
         client = APIClient()
         response = client.get(path=reverse('users'))
         self.assertEqual(response.status_code, 401)
+
+
+class PasswordChangeTestCase(APITestCase):
+    def test_change_password(self):
+        # Create user
+        email = 'kehoffman3@gmail.com'
+        new_password = 'password126'
+        old_password = 'password125'
+        user = User.objects.create_user(
+            email=email,
+            first_name='Test',
+            last_name='Account',
+            password=old_password,
+            username=email
+        )
+        self.client.force_authenticate(user=user)
+
+        # Change password
+        data = {
+            'new_password1': new_password,
+            'new_password2': new_password,
+            'old_password': old_password
+        }
+        header = {'Accept': 'application/json'}
+        response = self.client.post(path=reverse('change-password'),
+                                    content_type='application/json',
+                                    data=json.dumps(data),
+                                    **header)
+        self.assertEqual(response.status_code, 200)
+
+        # Login with new password
+        client = Client()
+        data = {
+            'email': email,
+            'password': new_password
+        }
+        response = client.post(path=reverse('login'),
+                               content_type='application/json',
+                               data=json.dumps(data),
+                               **header)
+        self.assertEqual(response.status_code, 200)
+
+
+class PasswordResetTestCase(TestCase):
+    def test_reset_password(self):
+        # Create user
+        email = 'kehoffman3@gmail.com'
+        User.objects.create_user(
+            email=email,
+            first_name='Test',
+            last_name='Account',
+            password='password126',
+            username=email
+        )
+
+        # Request forgot password link
+        data = {
+            'email': email
+        }
+        header = {'Accept': 'application/json'}
+        response = self.client.post(path=reverse('reset-password'),
+                                    content_type='application/json',
+                                    data=json.dumps(data),
+                                    **header)
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'detail' in json_data
+        assert json_data['detail'] == 'Password reset e-mail has been sent.'
+
+
+class PasswordResetConfirmationTestCase(TestCase):
+    def test_reset_password(self):
+        # Create user
+        email = 'kehoffman3@gmail.com'
+        new_password = 'password126'
+        user = User.objects.create_user(
+            email=email,
+            first_name='Test',
+            last_name='Account',
+            password='password126',
+            username=email
+        )
+        password_token_generator = PasswordResetTokenGenerator()
+        token = password_token_generator.make_token(user)
+
+        # Reset password
+        data = {
+            'new_password1': new_password,
+            'new_password2': new_password,
+            'token': token,
+            'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode('utf-8')
+        }
+        header = {'Accept': 'application/json'}
+        response = self.client.post(path=reverse('reset-password-confirmation'),
+                                    content_type='application/json',
+                                    data=json.dumps(data),
+                                    **header)
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'detail' in json_data
+        assert json_data['detail'] == 'Password has been reset with the new password.'
+
+        # Login with new password
+        data = {
+            'email': email,
+            'password': new_password
+        }
+        response = self.client.post(path=reverse('login'),
+                                    content_type='application/json',
+                                    data=json.dumps(data),
+                                    **header)
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'key' in json_data
+        assert json_data['key'] is not None
+        assert len(json_data['key']) == 40
