@@ -88,9 +88,14 @@ class SignupCode(models.Model):
         signup_code_used.send(sender=result.__class__, signup_code_result=result)
 
     def send(self, **kwargs):
-        protocol = getattr(settings, "DEFAULT_HTTP_PROTOCOL", "http")
-        current_site = kwargs["site"] if "site" in kwargs else Site.objects.get_current()
-        if "signup_url" not in kwargs:
+        if hasattr(settings, "SIGNUP_URL"):
+            signup_url = "{}?{}".format(
+                settings.SIGNUP_URL,
+                urlencode({"code": self.code})
+            )
+        elif "signup_url" not in kwargs:
+            protocol = getattr(settings, "DEFAULT_HTTP_PROTOCOL", "http")
+            current_site = kwargs["site"] if "site" in kwargs else Site.objects.get_current()
             signup_url = "{0}://{1}{2}?{3}".format(
                 protocol,
                 current_site.domain,
@@ -100,7 +105,6 @@ class SignupCode(models.Model):
         else:
             signup_url = kwargs["signup_url"]
         ctx = {
-            "current_site": current_site,
             "signup_code": self,
             "signup_url": signup_url,
         }

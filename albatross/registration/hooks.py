@@ -2,6 +2,7 @@ import hashlib
 import random
 
 from django.core.mail import EmailMultiAlternatives
+from python_http_client.exceptions import BadRequestsError
 
 from .conf import settings
 
@@ -40,15 +41,20 @@ class RegistrationDefaultHookSet(object):
         else:
             subject = "You've been invited to join an Albatross team"
         mail = EmailMultiAlternatives(
-          subject=subject,
-          body="",
-          from_email="Andrew Askins <andrew@builtbykrit.com>",
-          to=[to],
-          headers={"Reply-To": "andrew@builtbykrit.com"}
+            subject=subject,
+            body="test",
+            from_email="Andrew Askins <andrew@builtbykrit.com>",
+            reply_to=["andrew@builtbykrit.com>"],
+            to=to
         )
         mail.template_id = '3834a71f-bb2f-443a-869a-1f410fe645fa'
         mail.substitutions = {'%link%': ctx["signup_url"]}
-        mail.send()
+        try:
+            mail.send()
+        except BadRequestsError as e:
+            print(e.reason)
+            raise e
+
 
 class HookProxy(object):
 

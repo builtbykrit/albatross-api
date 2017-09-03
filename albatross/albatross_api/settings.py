@@ -27,7 +27,7 @@ CONFIG_NAME = os.environ.get('CONFIG_NAME')
 if CONFIG_NAME == 'production':
     DEBUG = False
 else:
-    DEBUG = False
+    DEBUG = True
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
@@ -221,6 +221,11 @@ REST_FRAMEWORK = {
 LOGOUT_ON_PASSWORD_CHANGE = False
 
 OLD_PASSWORD_FIELD_ENABLED = True
+
+
+# Registration settings
+
+SIGNUP_URL = 'https://getalbatross.com/signup'
 
 
 # Django Storages Settings

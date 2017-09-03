@@ -22,8 +22,7 @@ class UserRegistrationView(CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            signup_code = self.request.POST.get("code",
-                                                self.request.GET.get("code"))
+            signup_code = request.data.get('code', None)
             if signup_code:
                 signup_code = SignupCode.check_code(signup_code)
 

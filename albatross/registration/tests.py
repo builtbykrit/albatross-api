@@ -90,8 +90,9 @@ class RegistrationTestCase(TestCase):
                'Another user is already registered using that email.'
 
     def test_registration_with_invalid_signup_code(self):
-        response = self.register(self.ACCOUNT_INFO,
-                                 query_params={'code': 'invalid'})
+        data = self.ACCOUNT_INFO.copy()
+        data['code'] = 'invalid'
+        response = self.register(data)
         assert response.status_code == 400
 
         json_data = json.loads(response.content.decode('utf-8'))
