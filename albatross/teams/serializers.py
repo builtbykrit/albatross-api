@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework_json_api import serializers
 from rest_framework_json_api.relations import ResourceRelatedField
 from .models import Membership, Team
-
+from invitations.models import Invitation
 
 UserModel = get_user_model()
 
@@ -34,9 +34,13 @@ class MembershipSerializer(serializers.ModelSerializer):
         queryset=UserModel.objects
     )
 
+    invitation = ResourceRelatedField(
+        queryset=Invitation.objects
+    )
+
     class Meta:
         model = Membership
-        fields = ('created_at', 'id', 'role', 'state', 'user')
+        fields = ('created_at', 'id', 'role', 'state', 'user', 'invitation')
 
     class JSONAPIMeta:
         included_resources = ['user']

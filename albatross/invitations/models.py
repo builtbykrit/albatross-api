@@ -7,6 +7,8 @@ from .signals import invite_accepted, invite_sent
 
 
 class Invitation(models.Model):
+    class JSONAPIMeta:
+        resource_name = "invitations"
 
     STATUS_SENT = 1
     STATUS_ACCEPTED = 2

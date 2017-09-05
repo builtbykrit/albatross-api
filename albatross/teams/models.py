@@ -46,7 +46,7 @@ class BaseMembership(models.Model):
 
     @property
     def invitee(self):
-        return self.user or self.invite.to_user_email()
+        return self.user or self.invitation.to_user_email()
 
     def is_member(self):
         return self.role == BaseMembership.ROLE_MEMBER
@@ -57,8 +57,8 @@ class BaseMembership(models.Model):
     def status(self):
         if self.user:
             return self.get_state_display()
-        if self.invite:
-            return self.invite.get_status_display()
+        if self.invitation:
+            return self.invitation.get_status_display()
         return "Unknown"
 
 
@@ -108,7 +108,7 @@ class BaseTeam(models.Model):
             invite = Invitation.invite(from_user, to_email,
                                        message, send=False)
             membership, created = self.memberships.get_or_create(
-                invite=invite,
+                invitation=invite,
                 defaults={"role": role, "state": BaseMembership.STATE_INVITED}
             )
             invite.send_invite()
@@ -159,11 +159,11 @@ class Team(BaseTeam):
 
 
 class Membership(BaseMembership):
-    invite = models.ForeignKey(Invitation,
-                               related_name="memberships",
-                               null=True,
-                               blank=True,
-                               verbose_name="invite")
+    invitation = models.ForeignKey(Invitation,
+                                   related_name="memberships",
+                                   null=True,
+                                   blank=True,
+                                   verbose_name="invitation")
 
     team = models.ForeignKey(Team,
                              related_name="memberships",
@@ -175,7 +175,7 @@ class Membership(BaseMembership):
                              verbose_name="user")
 
     def accept(self):
-        self.user = self.invite.to_user
+        self.user = self.invitation.to_user
         self.state = BaseMembership.STATE_JOINED
         self.save()
 
@@ -183,6 +183,6 @@ class Membership(BaseMembership):
         return "{0} in {1}".format(self.user, self.team)
 
     class Meta:
-        unique_together = [("team", "user", "invite")]
+        unique_together = [("team", "user", "invitation")]
         verbose_name = "Membership"
         verbose_name_plural = "Memberships"

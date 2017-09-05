@@ -25,5 +25,7 @@ urlpatterns = [
         include('projects.urls')),
     url(r'^{}teams/'.format(settings.ROOT_URLPREFIX),
         include('teams.urls')),
+    url(r'^{}invitations/'.format(settings.ROOT_URLPREFIX),
+        include('invitations.urls')),
     url(r'^', include('ember_web_app.urls')),
 ]

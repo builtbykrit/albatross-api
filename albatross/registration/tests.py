@@ -118,7 +118,7 @@ class RegistrationTestCase(TestCase):
         )
         membership = team.invite_user(from_user=user,
                                       to_email='bill@builtbykrit.com')
-        invitation = membership.invite
+        invitation = membership.invitation
         signup_code = invitation.signup_code
 
         self.ACCOUNT_INFO['code'] = signup_code.code
@@ -128,6 +128,6 @@ class RegistrationTestCase(TestCase):
         self.assert_create_user_response_is_correct(response)
 
         # Test if the new user membership is set correctly
-        membership = Membership.objects.get(invite=invitation)
+        membership = Membership.objects.get(invitation=invitation)
         new_user = User.objects.get(email='bill@builtbykrit.com')
         self.assertEqual(membership.user, new_user)
