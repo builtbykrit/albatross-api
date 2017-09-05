@@ -1,4 +1,4 @@
-from invitations.serializers import InvitationSerializer
+from invitations.serializers import InvitationCreateSerializer
 
 from rest_framework import parsers, permissions, renderers, status, serializers
 from rest_framework.generics import CreateAPIView, \
@@ -30,17 +30,16 @@ class TeamInviteView(GenericAPIView):
     parser_classes = (parsers.JSONParser,)
     permission_classes = (permissions.IsAuthenticated,)
     queryset = Team.objects.all()
-    serializer_class = InvitationSerializer
+    serializer_class = InvitationCreateSerializer
 
     def post(self, request, *args, **kwargs):
-        if 'email' in request.data.keys():
-            email = request.data['email']
-            team = self.get_object()
-            team.invite_user(from_user=self.request.user,
-                         to_email=email)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            raise serializers.ValidationError('Email is a required field.')
+        serializer = InvitationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        team = self.get_object()
+        team.invite_user(from_user=self.request.user,
+                         to_email=serializer.validated_data['email'])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class TeamRetrieveView(RetrieveAPIView):
     included = ['memberships']
