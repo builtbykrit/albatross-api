@@ -6,6 +6,8 @@ from django.test import Client, TestCase
 from teams.models import Team
 from urllib.parse import urlencode
 
+from teams.models import Membership
+
 
 class RegistrationTestCase(TestCase):
     ACCOUNT_INFO = {
@@ -29,7 +31,7 @@ class RegistrationTestCase(TestCase):
         assert 'email' in attributes
         assert 'first_name' in attributes
         assert 'last_name' in attributes
-        assert 'password'not in attributes
+        assert 'password' not in attributes
         assert attributes['email'] == self.ACCOUNT_INFO['email']
         assert attributes['first_name'] == self.ACCOUNT_INFO['first_name']
         assert attributes['last_name'] == self.ACCOUNT_INFO['last_name']
@@ -42,7 +44,7 @@ class RegistrationTestCase(TestCase):
                 'type': 'users'
             }
         }
-        header = {'Accept':'application/vnd.api+json'}
+        header = {'Accept': 'application/vnd.api+json'}
         url = '/{}registration/'.format(
             settings.ROOT_URLPREFIX if settings.ROOT_URLPREFIX else '')
 
@@ -51,7 +53,7 @@ class RegistrationTestCase(TestCase):
 
         return client.post(url,
                            content_type='application/vnd.api+json',
-                           data = json.dumps(data),
+                           data=json.dumps(data),
                            **header)
 
     def test_registration(self):
@@ -119,9 +121,13 @@ class RegistrationTestCase(TestCase):
         invitation = membership.invite
         signup_code = invitation.signup_code
 
+        self.ACCOUNT_INFO['code'] = signup_code.code
         # Signup
-        response = self.register(self.ACCOUNT_INFO,
-                                 query_params={'code': signup_code.code})
+        response = self.register(self.ACCOUNT_INFO)
         assert response.status_code == 201
         self.assert_create_user_response_is_correct(response)
 
+        # Test if the new user membership is set correctly
+        membership = Membership.objects.get(invite=invitation)
+        new_user = User.objects.get(email='bill@builtbykrit.com')
+        self.assertEqual(membership.user, new_user)

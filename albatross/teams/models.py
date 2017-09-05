@@ -48,10 +48,6 @@ class BaseMembership(models.Model):
     def invitee(self):
         return self.user or self.invite.to_user_email()
 
-    def accept(self):
-        self.state = BaseMembership.STATE_JOINED
-        self.save()
-
     def is_member(self):
         return self.role == BaseMembership.ROLE_MEMBER
 
@@ -177,6 +173,11 @@ class Membership(BaseMembership):
                              null=True,
                              blank=True,
                              verbose_name="user")
+
+    def accept(self):
+        self.user = self.invite.to_user
+        self.state = BaseMembership.STATE_JOINED
+        self.save()
 
     def __str__(self):
         return "{0} in {1}".format(self.user, self.team)
