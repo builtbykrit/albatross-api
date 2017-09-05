@@ -6,7 +6,8 @@ from .views import (
     PasswordChangeView,
     PasswordResetView,
     PasswordResetConfirmationView,
-    UserView
+    UserView,
+    UserDetailView
 )
 
 urlpatterns = [
@@ -24,5 +25,6 @@ urlpatterns = [
         TemplateView.as_view(template_name="password_reset_confirm.html"),
         name='password_reset_confirm'),
 
-    url(r'^users/$', UserView.as_view(), name='users')
+    url(r'^users/$', UserView.as_view(), name='users'),
+    url(r'^users/(?P<pk>[0-9]+)/$', UserDetailView.as_view(), name='users-detail')
 ]
