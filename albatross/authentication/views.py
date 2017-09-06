@@ -11,11 +11,12 @@ from rest_auth.views import PasswordResetView as RestAuthPasswordResetView
 from rest_auth.views import UserDetailsView as RestAuthUserView
 
 from rest_framework import permissions
-from rest_framework.generics import RetrieveAPIView
+from rest_framework.generics import RetrieveAPIView, UpdateAPIView
 
 from django.contrib.auth.models import User
 
-from .serializers import UserSerializer
+from .models import UserProfile
+from .serializers import ProfileSerializer, UserSerializer
 
 
 class LoginView(RestAuthLoginView):
@@ -54,3 +55,10 @@ class UserDetailView(RetrieveAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+
+class UserProfileView(UpdateAPIView):
+    pagination_class = None
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = UserProfile.objects.all()
+    serializer_class = ProfileSerializer

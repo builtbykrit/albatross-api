@@ -5,7 +5,7 @@ class EmberWebAppTestCase(TestCase):
         client = Client()
         response = client.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'<title>AlbatrossWebApp</title>', response.content)
+        self.assertIn(b'<title>Albatross | Smarter Project Estimates</title>', response.content)
 
     def test_emberwebapp_404(self):
         client = Client()
