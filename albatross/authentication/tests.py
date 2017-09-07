@@ -11,6 +11,62 @@ from rest_framework.test import APITestCase, APIClient
 from teams.models import Team
 
 
+def assert_user_response_is_correct(response):
+    assert response.status_code == 200
+    json_data = json.loads(response.content.decode('utf-8'))
+
+    assert 'data' in json_data
+    data = json_data['data']
+    assert 'attributes' in data
+    assert 'id' in data
+
+    assert 'relationships' in data
+    assert 'type' in data
+    assert data['type'] == 'users'
+
+    attributes = data['attributes']
+    assert 'email' in attributes
+    assert 'first_name' in attributes
+    assert 'last_name' in attributes
+
+    relationships = data['relationships']
+    assert 'memberships' in relationships
+    assert 'data' in relationships['memberships']
+    assert type(relationships['memberships']['data']) == list
+    assert len(relationships['memberships']['data']) == 1
+    assert 'id' in relationships['memberships']['data'][0]
+    assert 'type' in relationships['memberships']['data'][0]
+    assert relationships['memberships']['data'][0]['type'] == 'memberships'
+
+    assert 'included' in json_data
+    included = json_data['included']
+    for item in included:
+        assert 'attributes' in item
+        assert 'id' in item
+        assert 'type' in item
+        if item['type'] == 'memberships':
+            attributes = item['attributes']
+            assert 'created_at' in attributes
+            assert 'role' in attributes
+            assert 'state' in attributes
+
+            assert 'relationships' in item
+            relationships = item['relationships']
+            assert 'team' in relationships
+            assert 'data' in relationships['team']
+            assert 'id' in relationships['team']['data']
+            assert 'type' in relationships['team']['data']
+            assert relationships['team']['data']['type'] == 'teams'
+            assert 'user' in relationships
+            assert 'id' in relationships['user']['data']
+            assert 'type' in relationships['user']['data']
+            assert relationships['user']['data']['type'] == 'users'
+        if item['type'] == 'profiles':
+            attributes = item['attributes']
+            assert 'toggl_api_key' in attributes
+            assert not attributes['toggl_api_key']
+
+
 class LoginTestCase(TestCase):
     ACCOUNT_CREDENTIALS = {
         'email': 'bill@builtbykrit.com',
@@ -89,58 +145,8 @@ class GetUserTestCase(APITestCase):
             creator=self.user,
             name='The A Team'
         )
-
         response = self.client.get(path=reverse('users'))
-        self.assertEqual(response.status_code, 200)
-
-        json_data = json.loads(response.content.decode('utf-8'))
-
-        assert 'data' in json_data
-        data = json_data['data']
-        assert 'attributes' in data
-        assert 'id' in data
-
-        assert 'relationships' in data
-        assert 'type' in data
-        assert data['type'] == 'users'
-
-        attributes = data['attributes']
-        assert 'email' in attributes
-        assert 'first_name' in attributes
-        assert 'last_name' in attributes
-
-        relationships = data['relationships']
-        assert 'memberships' in relationships
-        assert 'data' in relationships['memberships']
-        assert type(relationships['memberships']['data']) == list
-        assert len(relationships['memberships']['data']) == 1
-        assert 'id' in relationships['memberships']['data'][0]
-        assert 'type' in relationships['memberships']['data'][0]
-        assert relationships['memberships']['data'][0]['type'] == 'memberships'
-
-        assert 'included' in json_data
-        included = json_data['included']
-        for item in included:
-            assert 'attributes' in item
-            assert 'id' in item
-            assert 'relationships' in item
-            assert 'type' in item
-            if item['type'] == 'memberships':
-                attributes = item['attributes']
-                assert 'created_at' in attributes
-                assert 'role' in attributes
-                assert 'state' in attributes
-
-                relationships = item['relationships']
-                assert 'team' in relationships
-                assert 'data' in relationships['team']
-                assert 'id' in relationships['team']['data']
-                assert 'type' in relationships['team']['data']
-                assert relationships['team']['data']['type'] == 'teams'
-                assert 'user' in relationships
-                assert 'id' in relationships['user']['data']
-                assert 'type' in relationships['user']['data']
-                assert relationships['user']['data']['type'] == 'users'
+        assert_user_response_is_correct(response)
 
     def test_get_user_while_unauthenticated(self):
         client = APIClient()
@@ -262,3 +268,104 @@ class PasswordResetConfirmationTestCase(TestCase):
         assert 'key' in json_data
         assert json_data['key'] is not None
         assert len(json_data['key']) == 40
+
+
+class UpdateUserTestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='kehoffman3@gmail.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='kehoffman3@gmail.com'
+        )
+        Team.objects.create(
+            creator=self.user,
+            name='The A Team'
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_update_user(self):
+        # Get user (so we have id)
+        response = self.client.get(path=reverse('users'))
+        self.assertEqual(response.status_code, 200)
+
+        json_data = json.loads(response.content.decode('utf-8'))
+
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+        user_id = json_data['data']['id']
+
+        # Update user
+        new_first_name = 'Bill'
+        data = {
+            'data': {
+                'attributes': {
+                    'first_name': new_first_name
+                },
+                'id': user_id,
+                'type': 'users'
+            }
+        }
+        header = {'Accept': 'application/vnd.api+json'}
+        response = self.client.patch(path=reverse('users'),
+                                     content_type='application/vnd.api+json',
+                                     data=json.dumps(data),
+                                     **header)
+        assert_user_response_is_correct(response)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert json_data['data']['attributes']['first_name'] == new_first_name
+
+
+class UpdateUserProfileTestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='kehoffman3@gmail.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='kehoffman3@gmail.com'
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_update_user_profile(self):
+        # Get user (so we have id)
+        response = self.client.get(path=reverse('users'))
+        self.assertEqual(response.status_code, 200)
+
+        json_data = json.loads(response.content.decode('utf-8'))
+
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+        user_id = json_data['data']['id']
+
+        # Update user profile
+        toggl_api_key = 'adkljkajaf01'
+        data = {
+            'data': {
+                'attributes': {
+                    'toggl_api_key': toggl_api_key
+                },
+                'id': user_id,
+                'type': 'profiles'
+            }
+        }
+        header = {'Accept': 'application/vnd.api+json'}
+        response = self.client.patch(path=reverse('users-profile',
+                                                  args=(user_id,)),
+                                     content_type='application/vnd.api+json',
+                                     data=json.dumps(data),
+                                     **header)
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+        assert 'toggl_api_key' in data['attributes']
+        assert data['attributes']['toggl_api_key'] == toggl_api_key
+

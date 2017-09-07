@@ -7,7 +7,8 @@ from .views import (
     PasswordResetView,
     PasswordResetConfirmationView,
     UserView,
-    UserDetailView
+    UserDetailView,
+    UserProfileView
 )
 
 urlpatterns = [
@@ -26,5 +27,6 @@ urlpatterns = [
         name='password_reset_confirm'),
 
     url(r'^users/$', UserView.as_view(), name='users'),
-    url(r'^users/(?P<pk>[0-9]+)/$', UserDetailView.as_view(), name='users-detail')
+    url(r'^users/(?P<pk>[0-9]+)/$', UserDetailView.as_view(), name='users-detail'),
+    url(r'^users/(?P<pk>[0-9]+)/profile/$', UserProfileView.as_view(), name='users-profile')
 ]

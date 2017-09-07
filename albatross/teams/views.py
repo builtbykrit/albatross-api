@@ -1,6 +1,6 @@
 from invitations.serializers import InvitationCreateSerializer
 
-from rest_framework import parsers, permissions, renderers, status, serializers
+from rest_framework import parsers, permissions, status
 from rest_framework.generics import CreateAPIView, \
     GenericAPIView, RetrieveAPIView
 from rest_framework.response import Response

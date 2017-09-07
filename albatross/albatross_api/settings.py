@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'invitations',
     'teams',
     'projects',
+    'toggl',
     'django_extensions'
 ]
 
