@@ -216,6 +216,10 @@ REST_FRAMEWORK = {
     )
 }
 
+REST_AUTH_SERIALIZERS = {
+    'PASSWORD_RESET_SERIALIZER': 'authentication.serializers.PasswordResetSerializer',
+}
+
 
 # Django Rest Auth Settings
 
@@ -227,7 +231,7 @@ OLD_PASSWORD_FIELD_ENABLED = True
 # Registration settings
 
 SIGNUP_URL = 'https://getalbatross.com/signup'
-
+RESET_PASSWORD_URL = 'https://getalbatross.com/reset-password'
 
 # Django Storages Settings
 
