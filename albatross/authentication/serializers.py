@@ -1,11 +1,16 @@
 from django.contrib.auth import get_user_model
 from rest_framework_json_api import serializers
+from rest_auth.serializers import PasswordResetSerializer as RestAuthPasswordResetSerializer
 from rest_framework_json_api.relations import ResourceRelatedField
 
 from teams.models import Membership, Team
-
+from .forms import PasswordResetFrom
 
 UserModel = get_user_model()
+
+
+class PasswordResetSerializer(RestAuthPasswordResetSerializer):
+    password_reset_form_class = PasswordResetFrom
 
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -49,7 +54,7 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {
                 'write_only': True,
             },
-        } # write_only_fields were removed from DRF as of 3.2
+        }  # write_only_fields were removed from DRF as of 3.2
 
     class JSONAPIMeta:
         included_resources = ['memberships']
