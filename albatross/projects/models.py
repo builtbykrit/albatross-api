@@ -3,6 +3,7 @@ from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.core.validators import MaxValueValidator, MinValueValidator
 from teams.models import Team
+from toggl.hooks import hookset as toggl_hookset
 
 
 class CommonInfo(models.Model):
@@ -25,10 +26,18 @@ class Project(CommonInfo):
 
     @property
     def estimated(self):
-        aggregate_results = self.categories.aggregate(sum=Coalesce(Sum('items__estimated'), 0))
+        aggregate_results = self.categories.aggregate(
+            sum=Coalesce(Sum('items__estimated'), 0))
         sum = aggregate_results['sum']
         estimated = sum * (1 + (self.buffer / 100))
         return int(round(estimated))
+
+    def update_actual(self):
+        toggl_hookset.update_project_line_item_times(
+            self=toggl_hookset,
+            api_key=self.team.creator.profile.toggl_api_key,
+            project_to_update=self
+        )
 
     class JSONAPIMeta:
         resource_name = "projects"
@@ -53,10 +62,10 @@ class Category(CommonInfo):
 
 
 class Item(CommonInfo):
-    actual = models.IntegerField()
+    actual = models.FloatField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='items')
     description = models.CharField(max_length=200)
-    estimated = models.IntegerField()
+    estimated = models.FloatField()
 
     class JSONAPIMeta:
         resource_name = "items"
