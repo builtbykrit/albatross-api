@@ -33,7 +33,7 @@ class Project(CommonInfo):
         sum = aggregate_results['sum']
         buffer_percentage = decimal.Decimal(1 + (self.buffer / 100))
         estimated = sum * buffer_percentage
-        return int(round(estimated))
+        return round(estimated, 2)
 
     def update_actual(self, api_key):
         toggl_hookset.update_project_line_item_times(

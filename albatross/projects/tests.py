@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.test import TestCase
 from django.contrib.auth.models import User
 from rest_framework.test import APITestCase, APIClient
@@ -84,7 +85,7 @@ class ProjectModelTestCases(TestCase):
 
         self.assertEqual(project.estimated, 27)
         project.buffer = 20
-        self.assertEqual(project.estimated, 32)
+        self.assertEqual(project.estimated, Decimal("32.4"))
 
 
 class ProjectViewTests(APITestCase):
