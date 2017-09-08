@@ -33,6 +33,7 @@ class TogglTestCase(APITestCase):
             name='Albatross MVP',
             team=team
         )
+        # Create one category
         category = Category.objects.create(
             name='Back end dev',
             project=self.project
@@ -49,6 +50,26 @@ class TogglTestCase(APITestCase):
                  ('Toggl Integration',6),
                  ('Users',5),
                  ('Invitations',2.5)]
+        for item in items:
+            Item.objects.create(
+                actual=0,
+                category=category,
+                description=item[0],
+                estimated=item[1]
+            )
+        # Create another category
+        category = Category.objects.create(
+            name='Design',
+            project=self.project
+        )
+        items = [('Add Project',2),
+                 ('API Token',3),
+                 ('Authentication',3),
+                 ('Project',8),
+                 ('Projects',5),
+                 ('Settings',2),
+                 ('Signup',4),
+                 ('Users',2)]
         for item in items:
             Item.objects.create(
                 actual=0,
@@ -78,7 +99,7 @@ class TogglTestCase(APITestCase):
          assert 'buffer' in attributes
          assert 'estimated' in attributes
          assert 'name' in attributes
-         assert attributes['actual'] > 60
+         assert attributes['actual'] > 79
          assert attributes['buffer'] == 0
-         assert attributes['estimated'] == 85
+         assert attributes['estimated'] == 114
          assert attributes['name'] == self.project.name

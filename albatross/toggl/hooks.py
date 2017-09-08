@@ -1,3 +1,5 @@
+import math
+
 from datetime import datetime, timedelta
 
 from .utils import Toggl
@@ -52,9 +54,10 @@ class TogglDefaultHookset(object):
         # for our project over the last year.
         one_year_ago = datetime.now() - timedelta(weeks=52)
         toggl_report_criteria = {
-            'project_ids': [project_id],
+            'project_ids': project_id,
             'since': one_year_ago.strftime('%Y-%m-%d'),
-            'tag_ids': ids_for_tags_that_match_categories,
+            'tag_ids': ','.join([str(id) for id
+                                 in ids_for_tags_that_match_categories]),
             'without_description': 'false',
             'workspace_id': workspace_id,
         }
@@ -64,8 +67,8 @@ class TogglDefaultHookset(object):
         page = 2
         toggl_line_items = toggl_report['data']
         total_items = int(toggl_report['total_count'])
-        total_pages = total_items/items_per_page
-        while page < total_pages:
+        total_pages = math.ceil(total_items/items_per_page)
+        while page <= total_pages:
             toggl_report_criteria['page'] = page
             toggl_report = toggl.getDetailedReport(data=toggl_report_criteria)
             toggl_line_items += toggl_report['data']
