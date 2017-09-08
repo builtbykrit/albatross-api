@@ -173,7 +173,8 @@ class Membership(BaseMembership):
                                    related_name="memberships",
                                    null=True,
                                    blank=True,
-                                   verbose_name="invitation")
+                                   verbose_name="invitation",
+                                   on_delete=models.SET_NULL)
 
     team = models.ForeignKey(Team,
                              related_name="memberships",
@@ -188,6 +189,9 @@ class Membership(BaseMembership):
         self.user = self.invitation.to_user
         self.state = BaseMembership.STATE_JOINED
         self.save()
+        # Delete the invitation to prevent a frontend issue where
+        # both the invitation and the membership get displayed
+        self.invitation.delete()
 
     def __str__(self):
         return "{0} in {1}".format(self.user, self.team)

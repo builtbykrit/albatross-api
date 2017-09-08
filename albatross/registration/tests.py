@@ -128,6 +128,10 @@ class RegistrationTestCase(TestCase):
         self.assert_create_user_response_is_correct(response)
 
         # Test if the new user membership is set correctly
-        membership = Membership.objects.get(invitation=invitation)
+        # and the invitation is deleted (quick fix for a
+        # frontend issue where both the invitation and the
+        # membership get displayed)
+        membership = Membership.objects.get(pk=membership.id)
         new_user = User.objects.get(email='bill@builtbykrit.com')
         self.assertEqual(membership.user, new_user)
+        self.assertIsNone(membership.invitation)
