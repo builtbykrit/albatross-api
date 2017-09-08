@@ -2,7 +2,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.core.urlresolvers import reverse
 from django.utils import timezone
+from django.contrib.auth.models import User
 from invitations.models import Invitation
+from rest_framework.exceptions import ValidationError
 
 from . import signals
 from .conf import settings
@@ -104,7 +106,14 @@ class BaseTeam(models.Model):
 
     def invite_user(self, from_user, to_email,
                     role=BaseMembership.ROLE_MEMBER, message=None):
-        if not Invitation.objects.filter(signup_code__email=to_email).exists():
+
+        if Invitation.objects.filter(signup_code__email=to_email).exists():
+            raise ValidationError('The email address you entered has already been invited to join a team.')
+        try:
+            if User.objects.get(email=to_email):
+                raise ValidationError('This user is already apart of a team.')
+        except User.DoesNotExist:
+            # Send an invite if there is not an email address associated with that user
             invite = Invitation.invite(from_user, to_email,
                                        message, send=False)
             membership, created = self.memberships.get_or_create(
@@ -133,6 +142,7 @@ class BaseTeam(models.Model):
             return self.memberships.get(user=user)
         except ObjectDoesNotExist:
             pass
+
 
 class Team(BaseTeam):
     name = models.CharField(max_length=100, verbose_name="name")

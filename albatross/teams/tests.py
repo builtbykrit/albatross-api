@@ -123,3 +123,42 @@ class TeamViewsTestCase(APITestCase):
                                path=reverse('teams-invite-user', args=(team.id,)),
                                content_type='application/json')
         self.assertEqual(response.status_code, 401)
+
+    def test_invite_to_team_with_pending_invitation(self):
+
+        team = Team.objects.create(
+            creator=self.user,
+            name=self.TEAM_INFO['name']
+        )
+
+        data = {'email': 'bill@builtbykrit.com'}
+        self.client.post(data=json.dumps(data),
+                         path=reverse('teams-invite-user', args=(team.id,)),
+                         content_type='application/json')
+
+        response = self.client.post(data=json.dumps(data),
+                               path=reverse('teams-invite-user', args=(team.id,)),
+                               content_type='application/json')
+
+        self.assertEqual(response.status_code, 400)
+        json_response = json.loads(response.content.decode('utf-8'))
+        errors = json_response['errors']
+        self.assertEqual(errors[0]['detail'], "The email address you entered has already been invited to join a team.")
+
+    def test_invite_to_team_when_a_user(self):
+
+        team = Team.objects.create(
+            creator=self.user,
+            name=self.TEAM_INFO['name']
+        )
+
+        data = {'email': 'kehoffman3@gmail.com'}
+
+        response = self.client.post(data=json.dumps(data),
+                               path=reverse('teams-invite-user', args=(team.id,)),
+                               content_type='application/json')
+
+        self.assertEqual(response.status_code, 400)
+        json_response = json.loads(response.content.decode('utf-8'))
+        errors = json_response['errors']
+        self.assertEqual(errors[0]['detail'], "This user is already apart of a team.")
