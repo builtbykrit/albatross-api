@@ -49,6 +49,8 @@ class RegistrationDefaultHookSet(object):
         )
         mail.template_id = '3834a71f-bb2f-443a-869a-1f410fe645fa'
         mail.substitutions = {'%link%': ctx["signup_url"]}
+        # So Sendgrid sends the html version of the template instead of text
+        mail.attach_alternative('test', "text/html")
         try:
             mail.send()
         except BadRequestsError as e:

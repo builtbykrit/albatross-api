@@ -28,6 +28,8 @@ class PasswordResetFrom(RestAuthPasswordResetForm):
         )
         mail.template_id = '4bf3e329-ff7d-43b8-817c-d5e4894f78db'
         mail.substitutions = {'%link%': password_reset_url}
+        # So Sendgrid sends the html version of the template instead of text
+        mail.attach_alternative('test', "text/html")
         try:
             mail.send()
         except BadRequestsError as e:
