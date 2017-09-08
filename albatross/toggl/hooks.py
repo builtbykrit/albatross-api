@@ -5,6 +5,10 @@ from datetime import datetime, timedelta
 from .utils import Toggl
 
 
+def make_item_key(item):
+    return "{}:{}".format(item.category.name, item.description)
+
+
 class TogglDefaultHookset(object):
 
     def update_project_line_item_times(self, api_key, project_to_update):
@@ -85,20 +89,28 @@ class TogglDefaultHookset(object):
         if not project_to_update_line_items:
             return
 
-        line_items_by_description = {item.description : item
-                                     for item in project_to_update_line_items}
-        line_item_totals = {item.description: 0
+        line_items = {make_item_key(item) : item for item
+                      in project_to_update_line_items}
+        line_item_totals = {make_item_key(item): 0
                             for item in project_to_update_line_items}
 
         for line_item in toggl_line_items:
-            if line_item['description'] in line_item_totals:
-                total = line_item_totals[line_item['description']]
+            item_category_name = None
+            for tag in line_item['tags']:
+                if tag in category_names:
+                    item_category_name = tag
+                    break
+
+            item_key = "{}:{}".format(item_category_name,
+                                      line_item['description'])
+            if item_key in line_item_totals:
+                total = line_item_totals[item_key]
                 total+= line_item['dur'] / (1000 * 60 * 60)
-                line_item_totals[line_item['description']] = total
+                line_item_totals[item_key] = total
                 # toggl returns duration in milliseconds
 
-        for description, total in line_item_totals.items():
-            line_item = line_items_by_description[description]
+        for item_key, total in line_item_totals.items():
+            line_item = line_items[item_key]
             line_item.actual = total
             line_item.save()
 
