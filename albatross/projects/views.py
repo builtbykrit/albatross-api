@@ -1,5 +1,7 @@
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
@@ -35,7 +37,16 @@ class ProjectUpdateActualTimeView(GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         project = self.get_object()
-        project.update_actual()
+
+        try:
+            toggl_api_key = self.request.user.profile.toggl_api_key
+        except ObjectDoesNotExist:
+            try:
+                toggl_api_key = project.team.creator.profile.toggl_api_key
+            except ObjectDoesNotExist:
+                raise ValidationError('A Toggl API key is required to import from Toggl.')
+
+        project.update_actual(toggl_api_key)
         serializer = self.get_serializer(project)
         return Response(serializer.data)
 
