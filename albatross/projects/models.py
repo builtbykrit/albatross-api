@@ -62,10 +62,10 @@ class Category(CommonInfo):
 
 
 class Item(CommonInfo):
-    actual = models.FloatField()
+    actual = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='items')
     description = models.CharField(max_length=200)
-    estimated = models.FloatField()
+    estimated = models.DecimalField(max_digits=10, decimal_places=2)
 
     class JSONAPIMeta:
         resource_name = "items"
