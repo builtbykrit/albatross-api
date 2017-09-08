@@ -12,7 +12,7 @@ class UserProfile(models.Model):
     """
     A model to store a user's Toggl related settings
     """
-    toggl_api_key = models.CharField(max_length=200)
+    toggl_api_key = models.CharField(max_length=200, blank=True)
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, related_name='profile',
         on_delete=models.CASCADE, verbose_name="User",
