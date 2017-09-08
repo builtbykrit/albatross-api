@@ -1,3 +1,5 @@
+import decimal
+
 from django.db import models
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
@@ -29,7 +31,8 @@ class Project(CommonInfo):
         aggregate_results = self.categories.aggregate(
             sum=Coalesce(Sum('items__estimated'), 0))
         sum = aggregate_results['sum']
-        estimated = sum * (1 + (self.buffer / 100))
+        buffer_percentage = decimal.Decimal(1 + (self.buffer / 100))
+        estimated = sum * buffer_percentage
         return int(round(estimated))
 
     def update_actual(self):
