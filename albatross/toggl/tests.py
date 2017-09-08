@@ -33,12 +33,13 @@ class TogglTestCase(APITestCase):
             name='Albatross MVP',
             team=team
         )
-        # Create one category
+        # Create one category with the correct name but incorrect
+        # casing so that we can make sure our integration ignores case
         category = Category.objects.create(
-            name='Back end dev',
+            name='back end dev',
             project=self.project
         )
-        items = [('Authentication',10),
+        items = [('authentication',10),
                  ('Categories',8),
                  ('Deployment',25),
                  ('Line Items',8),
@@ -47,7 +48,7 @@ class TogglTestCase(APITestCase):
                  ('Signup',2.5),
                  ('Summary',3),
                  ('Teams',6),
-                 ('Toggl Integration',6),
+                 ('Toggl integration',6),
                  ('Users',5),
                  ('Invitations',2.5)]
         for item in items:

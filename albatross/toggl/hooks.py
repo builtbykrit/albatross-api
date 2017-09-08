@@ -6,7 +6,8 @@ from .utils import Toggl
 
 
 def make_item_key(item):
-    return "{}:{}".format(item.category.name, item.description)
+    return "{}:{}".format(item.category.name.lower(),
+                          item.description.lower())
 
 
 class TogglDefaultHookset(object):
@@ -47,11 +48,11 @@ class TogglDefaultHookset(object):
         # Get tags that correspond to our categories
         all_tags = toggl.getTags()
         project_to_update_categories = project_to_update.categories.all()
-        category_names = {category.name for category
+        category_names = {category.name.lower() for category
                           in project_to_update_categories}
         ids_for_tags_that_match_categories = []
         for tag in all_tags:
-            if tag['name'] in category_names:
+            if tag['name'].lower() in category_names:
                 ids_for_tags_that_match_categories.append(tag['id'])
 
         # Grab all line items tagged with our categories
@@ -97,12 +98,12 @@ class TogglDefaultHookset(object):
         for line_item in toggl_line_items:
             item_category_name = None
             for tag in line_item['tags']:
-                if tag in category_names:
-                    item_category_name = tag
+                if tag.lower() in category_names:
+                    item_category_name = tag.lower()
                     break
 
             item_key = "{}:{}".format(item_category_name,
-                                      line_item['description'])
+                                      line_item['description'].lower())
             if item_key in line_item_totals:
                 total = line_item_totals[item_key]
                 total+= line_item['dur'] / (1000 * 60 * 60)
