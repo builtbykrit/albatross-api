@@ -40,7 +40,15 @@ class MembershipSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ('toggl_api_key',)
+        fields = ('on_trial', 'toggl_api_key', 'trial_expires_at',)
+        extra_kwargs = {
+            'on_trial': {
+                'read_only': True,
+            },
+            'trial_expires_at': {
+                'read_only': True,
+            },
+        }  # write_only_fields were removed from DRF as of 3.2
 
 class UserSerializer(serializers.ModelSerializer):
     included_serializers = {

@@ -7,9 +7,13 @@ coreapi==2.3.1
 coreschema==0.0.4
 Django==1.11.4
 django-appconf==1.0.2
+django-common-helpers==0.9.1
 django-cors-headers==2.1.0
+django-cron==0.5.0
 django-extensions==1.9.0
+django-jsonfield==1.0.1
 django-rest-auth==0.9.1
+-e git+https://github.com/Guest007/django-rest-framework-stripe.git@905b2f6b9bbb06acb46d16f99e91de9f541289cc#egg=django_rest_framework_stripe-master
 django-storages==1.6.5
 djangorestframework==3.6.4
 djangorestframework-jsonapi==2.2.0
@@ -18,6 +22,7 @@ idna==2.6
 inflection==0.3.1
 itypes==1.1.0
 Jinja2==2.9.6
+jsonfield==2.0.2
 Markdown==2.6.9
 MarkupSafe==1.0
 parse==1.8.2
@@ -30,5 +35,6 @@ requests==2.18.4
 sendgrid==3.6.5
 sendgrid-django==4.0.4
 six==1.10.0
+stripe==1.65.1
 uritemplate==3.0.0
 urllib3==1.22

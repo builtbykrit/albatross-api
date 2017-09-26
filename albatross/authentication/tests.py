@@ -1,5 +1,6 @@
 import json
 
+from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -63,8 +64,15 @@ def assert_user_response_is_correct(response):
             assert relationships['user']['data']['type'] == 'users'
         if item['type'] == 'profiles':
             attributes = item['attributes']
+            assert 'on_trial' in attributes
             assert 'toggl_api_key' in attributes
+            assert 'trial_expires_at' in attributes
+            assert attributes['on_trial'] == True
             assert not attributes['toggl_api_key']
+            assert (datetime.strptime(attributes['trial_expires_at'],
+                                      "%Y-%m-%dT%H:%M:%S.%fZ")
+                    - datetime.now()
+                    > timedelta(days=13))
 
 
 class LoginTestCase(TestCase):
@@ -320,6 +328,18 @@ class UpdateUserTestCase(APITestCase):
 
 
 class UpdateUserProfileTestCase(APITestCase):
+    def get_user_profile(self):
+        response = self.client.get(path=reverse('users'))
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+
+        return json_data
+
     def setUp(self):
         self.user = User.objects.create_user(
             email='kehoffman3@gmail.com',
@@ -332,16 +352,8 @@ class UpdateUserProfileTestCase(APITestCase):
 
     def test_update_user_profile(self):
         # Get user (so we have id)
-        response = self.client.get(path=reverse('users'))
-        self.assertEqual(response.status_code, 200)
-
-        json_data = json.loads(response.content.decode('utf-8'))
-
-        assert 'data' in json_data
-        data = json_data['data']
-        assert 'attributes' in data
-        assert 'id' in data
-        user_id = json_data['data']['id']
+        user = self.get_user_profile()
+        user_id = user['data']['id']
 
         # Update user profile
         toggl_api_key = 'adkljkajaf01'
@@ -369,3 +381,66 @@ class UpdateUserProfileTestCase(APITestCase):
         assert 'toggl_api_key' in data['attributes']
         assert data['attributes']['toggl_api_key'] == toggl_api_key
 
+    def test_try_to_update_on_trial_field(self):
+        # Get user (so we have id)
+        user = self.get_user_profile()
+        user_id = user['data']['id']
+
+        # Update user profile
+        data = {
+            'data': {
+                'attributes': {
+                    'on_trial': False,
+                },
+                'id': user_id,
+                'type': 'profiles'
+            }
+        }
+        header = {'Accept': 'application/vnd.api+json'}
+        response = self.client.patch(path=reverse('users-profile',
+                                                  args=(user_id,)),
+                                     content_type='application/vnd.api+json',
+                                     data=json.dumps(data),
+                                     **header)
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+        assert 'on_trial' in data['attributes']
+        assert 'toggl_api_key' in data['attributes']
+        assert 'trial_expires_at' in data['attributes']
+        assert data['attributes']['on_trial'] == True
+
+    def test_try_to_update_trial_expires_at_field(self):
+        # Get user (so we have id)
+        user = self.get_user_profile()
+        user_id = user['data']['id']
+
+        # Update user profile
+        data = {
+            'data': {
+                'attributes': {
+                    'trial_expires_at': "2016-10-10T13:53:01.623899Z",
+                },
+                'id': user_id,
+                'type': 'profiles'
+            }
+        }
+        header = {'Accept': 'application/vnd.api+json'}
+        response = self.client.patch(path=reverse('users-profile',
+                                                  args=(user_id,)),
+                                     content_type='application/vnd.api+json',
+                                     data=json.dumps(data),
+                                     **header)
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+        assert 'on_trial' in data['attributes']
+        assert 'toggl_api_key' in data['attributes']
+        assert 'trial_expires_at' in data['attributes']
+        assert data['attributes']['trial_expires_at'] != "2016-10-10T13:53:01.623899Z"

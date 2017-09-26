@@ -75,7 +75,9 @@ INSTALLED_APPS = [
     'teams',
     'projects',
     'toggl',
-    'django_extensions'
+    'django_extensions',
+    'drfstripe',
+    'django_cron',
 ]
 
 SITE_ID = 1 # For rest_auth.registration
@@ -233,6 +235,7 @@ OLD_PASSWORD_FIELD_ENABLED = True
 SIGNUP_URL = 'https://getalbatross.com/signup'
 RESET_PASSWORD_URL = 'https://getalbatross.com/reset-password'
 
+
 # Django Storages Settings
 
 AWS_ACCESS_KEY_ID = os.environ.get('S3_API_KEY')
@@ -251,3 +254,52 @@ AWS_STORAGE_BUCKET_NAME = os.environ.get('S3_WEB_APP_ASSETS_BUCKET')
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
 S3_USE_SIGV4 = True
+
+
+# DRF Stripe Settings
+
+PAYMENTS_PLANS = {
+    "agency-beta-monthly": {
+        "stripe_plan_id": "agency-beta-monthly",
+        "name": "Agency ($25/month)",
+        "description": "The monthly agency subscription to Albatross",
+        "price": 25,
+        "currency": "usd",
+        "interval": "month"
+    },
+    "agency-beta-annual": {
+        "stripe_plan_id": "agency-beta-annual",
+        "name": "Agency ($250/year)",
+        "description": "The annual agency subscription to Albatross",
+        "price": 250,
+        "currency": "usd",
+        "interval": "year"
+    },
+    "freelancer-beta-monthly": {
+        "stripe_plan_id": "freelancer-beta-monthly",
+        "name": "Freelancer ($10/month)",
+        "description": "The monthly freelancer subscription to Albatross",
+        "price": 10,
+        "currency": "usd",
+        "interval": "month"
+    },
+    "freelancer-beta-annual": {
+        "stripe_plan_id": "freelancer-beta-annual",
+        "name": "Freelancer ($100/year)",
+        "description": "The annual freelancer subscription to Albatross",
+        "price": 100,
+        "currency": "usd",
+        "interval": "year"
+    },
+}
+
+STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "pk_test_xBKNwc9sDb5owErq1QkZa5I3")
+
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "sk_test_t6EpW0A1s2vSRUmO0rqwNT6D")
+
+
+# Django Cron Settings
+
+CRON_CLASSES = [
+    "albatross_api.cron.TrailExpirationCronJob",
+]

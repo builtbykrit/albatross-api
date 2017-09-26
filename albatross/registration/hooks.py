@@ -45,7 +45,7 @@ class RegistrationDefaultHookSet(object):
             body="test",
             from_email="Andrew Askins <andrew@builtbykrit.com>",
             reply_to=["andrew@builtbykrit.com>"],
-            to=to
+            to=[to]
         )
         mail.template_id = '3834a71f-bb2f-443a-869a-1f410fe645fa'
         mail.substitutions = {'%link%': ctx["signup_url"]}

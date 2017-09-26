@@ -109,7 +109,7 @@ class SignupCode(models.Model):
             "signup_url": signup_url,
         }
         ctx.update(kwargs.get("extra_ctx", {}))
-        hookset.send_invitation_email([self.email], ctx)
+        hookset.send_invitation_email(self.email, ctx)
         self.sent = timezone.now()
         self.save()
         signup_code_sent.send(sender=SignupCode, signup_code=self)
