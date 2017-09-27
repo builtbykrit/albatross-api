@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'drfstripe',
     'django_cron',
+    'payments'
 ]
 
 SITE_ID = 1 # For rest_auth.registration

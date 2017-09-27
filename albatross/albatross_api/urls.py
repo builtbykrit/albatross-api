@@ -21,6 +21,8 @@ urlpatterns = [
         include('authentication.urls')),
     url(r'^{}registration/'.format(settings.ROOT_URLPREFIX),
         include('registration.urls')),
+    url(r'^{}payments/'.format(settings.ROOT_URLPREFIX),
+        include('payments.urls')),
     url(r'{}'.format(settings.ROOT_URLPREFIX),
         include('projects.urls')),
     url(r'^{}teams/'.format(settings.ROOT_URLPREFIX),
