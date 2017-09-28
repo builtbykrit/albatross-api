@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APITestCase
+from teams.models import Membership, Team
 
 
 def change_card_token(client, new_token):
@@ -76,6 +77,38 @@ class PaymentDetailsTestCase(APITestCase):
         assert 'cus_' in json_data['stripe_id']
 
 class SubscriptionTestCase(APITestCase):
+    def assert_valid_subscription_response(self, response, plan_id):
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'amount' in json_data
+        assert 'cancel_at_period_end' in json_data
+        assert 'canceled_at' in json_data
+        assert 'created_at' in json_data
+        assert 'currency' in json_data
+        assert 'current_period_end' in json_data
+        assert 'current_period_start' in json_data
+        assert 'customer' in json_data
+        assert 'ended_at' in json_data
+        assert 'id' in json_data
+        assert 'plan' in json_data
+        assert 'quantity' in json_data
+        assert 'start' in json_data
+        assert 'status' in json_data
+        assert 'trial_end' in json_data
+        assert 'trial_start' in json_data
+        #
+        assert not json_data['cancel_at_period_end']
+        assert not json_data['canceled_at']
+        assert datetime.strptime(json_data['current_period_end'], '%Y-%m-%dT%H:%M:%SZ')
+        assert datetime.strptime(json_data['current_period_start'], '%Y-%m-%dT%H:%M:%SZ')
+        assert not json_data['ended_at']
+        assert type(json_data['id']) == int
+        assert json_data['plan'] == plan_id
+        assert json_data['quantity'] == 1
+        assert datetime.strptime(json_data['start'], '%Y-%m-%dT%H:%M:%SZ')
+        assert json_data['status'] == 'active'
+        assert not json_data['trial_end']
+        assert not json_data['trial_start']
+
     def change_subscription(self, stripe_plan):
         data = {
             'stripe_plan': stripe_plan
@@ -94,6 +127,10 @@ class SubscriptionTestCase(APITestCase):
             last_name='Account',
             password='password125',
             username='kehoffman3@gmail.com'
+        )
+        self.team = Team.objects.create(
+            creator=user,
+            name='The A Team'
         )
         self.client.force_authenticate(user=user)
         change_card_token(self.client, 'tok_visa')
@@ -191,37 +228,28 @@ class SubscriptionTestCase(APITestCase):
         self.change_subscription(plan_id)
         response = self.client.get(reverse('payments-subscription'))
         assert response.status_code == 200
+        self.assert_valid_subscription_response(response, plan_id)
 
-        json_data = json.loads(response.content.decode('utf-8'))
-        assert 'amount' in json_data
-        assert 'cancel_at_period_end' in json_data
-        assert 'canceled_at' in json_data
-        assert 'created_at' in json_data
-        assert 'currency' in json_data
-        assert 'current_period_end' in json_data
-        assert 'current_period_start' in json_data
-        assert 'customer' in json_data
-        assert 'ended_at' in json_data
-        assert 'id' in json_data
-        assert 'plan' in json_data
-        assert 'quantity' in json_data
-        assert 'start' in json_data
-        assert 'status' in json_data
-        assert 'trial_end' in json_data
-        assert 'trial_start' in json_data
-        #
-        assert not json_data['cancel_at_period_end']
-        assert not json_data['canceled_at']
-        assert datetime.strptime(json_data['current_period_end'], '%Y-%m-%dT%H:%M:%SZ')
-        assert datetime.strptime(json_data['current_period_start'], '%Y-%m-%dT%H:%M:%SZ')
-        assert not json_data['ended_at']
-        assert json_data['id'] == 1
-        assert json_data['plan'] == plan_id
-        assert json_data['quantity'] == 1
-        assert datetime.strptime(json_data['start'], '%Y-%m-%dT%H:%M:%SZ')
-        assert json_data['status'] == 'active'
-        assert not json_data['trial_end']
-        assert not json_data['trial_start']
+    def test_get_subscription_as_team_member(self):
+        plan_id = 'agency-beta-monthly'
+        self.change_subscription(plan_id)
+
+        user = User.objects.create_user(
+            email='kehoffman3s_friend@gmail.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='kehoffman3s_friend@gmail.com'
+        )
+        Membership.objects.create(
+            team=self.team,
+            user=user
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(reverse('payments-subscription'))
+        assert response.status_code == 200
+        self.assert_valid_subscription_response(response, plan_id)
 
     def test_cancel_subscription(self):
         data = {

@@ -4,7 +4,7 @@ from django_cron import CronJobBase, Schedule
 from django.utils import timezone
 from python_http_client.exceptions import BadRequestsError
 
-from authentication.models import UserProfile
+from teams.models import Team
 
 
 class TrailExpirationCronJob(CronJobBase):
@@ -40,23 +40,23 @@ class TrailExpirationCronJob(CronJobBase):
             raise e
 
     def do(self):
-        profiles_with_almost_expired_trials = UserProfile.objects.filter(
+        teams_with_almost_expired_trials = Team.objects.filter(
             on_trial = True,
             trial_expires_at__gte = timezone.now(),
             trial_expires_at__lte = timezone.now() + timedelta(days=3)
         )
-        for profile in profiles_with_almost_expired_trials:
-            self.send_email(profile.user.email,
-                            profile.user.first_name,
+        for team in teams_with_almost_expired_trials:
+            self.send_email(team.creator.email,
+                            team.creator.first_name,
                             'almost_expired')
 
-        profiles_with_expired_trials = UserProfile.objects.filter(
+        teams_with_expired_trials = Team.objects.filter(
             on_trial = True,
             trial_expires_at__lte = timezone.now()
         )
-        for profile in profiles_with_expired_trials:
-            profile.on_trial = False
-            profile.save()
-            self.send_email(profile.user.email,
-                            profile.user.first_name,
+        for team in teams_with_expired_trials:
+            team.on_trial = False
+            team.save()
+            self.send_email(team.creator.email,
+                            team.creator.first_name,
                             'expired')

@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
+from teams.models import Team
+
 from .cron import TrailExpirationCronJob
 
 
@@ -30,6 +32,10 @@ class TrailExpirationCronJobTestCase(TestCase):
             password='password125',
             username='user.1@example.com'
         )
+        team = Team.objects.create(
+            creator=user,
+            name="Team"
+        )
 
         user_with_nearly_expired_trial = User.objects.create_user(
             email='user.2@example.com',
@@ -38,9 +44,11 @@ class TrailExpirationCronJobTestCase(TestCase):
             password='password125',
             username='user.2@example.com'
         )
-        profile = user_with_nearly_expired_trial.profile
-        profile.trial_expires_at = timezone.now() + timedelta(hours=71)
-        profile.save()
+        team_with_nearly_expired_trial = Team.objects.create(
+            creator=user_with_nearly_expired_trial,
+            name="Team with nearly expired trial",
+            trial_expires_at= timezone.now() + timedelta(hours=71)
+        )
 
         user_with_expired_trial = User.objects.create_user(
             email='user.3@example.com',
@@ -49,26 +57,25 @@ class TrailExpirationCronJobTestCase(TestCase):
             password='password125',
             username='user.3@example.com'
         )
-        profile = user_with_expired_trial.profile
-        profile.trial_expires_at = timezone.now() - timedelta(hours=1)
-        profile.save()
+        team_with_expired_trial = Team.objects.create(
+            creator=user_with_nearly_expired_trial,
+            name="Team with expired trial",
+            trial_expires_at= timezone.now() - timedelta(hours=1)
+        )
 
         # Run cronjob
         cronjob = TrailExpirationCronJob()
         cronjob.do()
 
         # Verify results
-        user = User.objects.get(id=user.id)
-        profile = user.profile
-        assert profile.on_trial == True
-        assert profile.trial_expires_at > timezone.now() + timedelta(days=13)
+        team = Team.objects.get(id=team.id)
+        assert team.on_trial == True
+        assert team.trial_expires_at > timezone.now() + timedelta(days=13)
 
-        user_with_nearly_expired_trial = User.objects.get(
-            id=user_with_nearly_expired_trial.id)
-        profile = user_with_nearly_expired_trial.profile
-        assert profile.on_trial == True
+        team_with_nearly_expired_trial = Team.objects.get(
+            id=team_with_nearly_expired_trial.id)
+        assert team_with_nearly_expired_trial.on_trial == True
 
-        user_with_expired_trial = User.objects.get(
-            id=user_with_expired_trial.id)
-        profile = user_with_expired_trial.profile
-        assert profile.on_trial == False
+        team_with_expired_trial = Team.objects.get(
+            id=team_with_expired_trial.id)
+        assert team_with_expired_trial.on_trial == False

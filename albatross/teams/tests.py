@@ -1,5 +1,6 @@
 import json
 
+from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APITestCase, APIClient
@@ -35,7 +36,14 @@ class TeamViewsTestCase(APITestCase):
         attributes = data['attributes']
         assert 'created_at' in attributes
         assert 'name' in attributes
+        assert 'on_trial' in attributes
+        assert 'trial_expires_at' in attributes
         assert attributes['name'] == self.TEAM_INFO['name']
+        assert attributes['on_trial'] == True
+        assert (datetime.strptime(attributes['trial_expires_at'],
+                                      "%Y-%m-%dT%H:%M:%S.%fZ")
+                    - datetime.now()
+                    > timedelta(days=13))
 
         relationships = data['relationships']
         assert 'memberships' in relationships

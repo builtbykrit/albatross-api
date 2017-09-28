@@ -59,7 +59,16 @@ class TeamSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Team
-        fields = ('created_at', 'id', 'memberships', 'name')
+        fields = ('created_at', 'id', 'memberships',
+                  'name', 'on_trial', 'trial_expires_at',)
+        extra_kwargs = {
+            'on_trial': {
+                'read_only': True,
+            },
+            'trial_expires_at': {
+                'read_only': True,
+            },
+        }  # write_only_fields were removed from DRF as of 3.2
 
     class JSONAPIMeta:
         included_resources = ['memberships']

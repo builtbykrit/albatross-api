@@ -1,3 +1,5 @@
+import stripe
+
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
@@ -9,8 +11,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from .conf import settings as app_settings
 
 from drfstripe.api.serializers import (
     CardTokenSerializer,
@@ -24,13 +24,12 @@ from drfstripe.api.serializers import (
 )
 
 from drfstripe.models import (
-    Customer,
-    CurrentSubscription,
     Event,
     EventProcessingException
 )
 
-import stripe
+from .conf import settings as app_settings
+from .models import CurrentSubscription, Customer
 
 
 stripe.api_key = app_settings.get_api_key()
@@ -44,7 +43,10 @@ class StripeView(APIView):
 
     def get_current_subscription(self):
         try:
-            return self.request.user.customer.current_subscription
+            team = self.get_users_team()
+            if not team:
+                return None
+            return team.current_subscription
         except CurrentSubscription.DoesNotExist:
             return None
 
@@ -53,6 +55,16 @@ class StripeView(APIView):
             return self.request.user.customer
         except ObjectDoesNotExist:
             return Customer.create(self.request.user)
+
+    def get_users_team(self):
+        try:
+            memberships = self.request.user.memberships
+            membership = memberships.first()
+            if not membership:
+                return None
+            return membership.team
+        except ObjectDoesNotExist:
+            return None
 
 
 class CancelView(StripeView):
@@ -140,10 +152,20 @@ class SubscriptionView(StripeView):
             serializer = self.serializer_class(data=request.data)
 
             if serializer.is_valid():
+                # Subscribe to the plan. Note that customer.subscribe returns
+                # Stripe's response, not a CurrentSubscription db model.
+                #
+                # So we need to call customer.current_subscription to set
+                # the subscriptions team.
                 validated_data = serializer.validated_data
                 stripe_plan = validated_data.get('stripe_plan', None)
                 customer = self.get_customer()
-                subscription = customer.subscribe(stripe_plan)
+                subscription = customer.subscribe(stripe_plan) # this is Stripe's response
+
+                team = self.get_users_team()
+                current_subscription = customer.current_subscription
+                current_subscription.team = team
+                current_subscription.save()
 
                 return Response(subscription, status=status.HTTP_201_CREATED)
             else:
