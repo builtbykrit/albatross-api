@@ -194,7 +194,11 @@ CORS_URLS_REGEX = r'^/api/.*$'
 
 EMAIL_BACKEND = "sgbackend.SendGridBackend"
 
+REPLY_TO_EMAIL_ADDRESS = "andrew@builtbykrit.com>"
+
 SENDGRID_API_KEY = "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"
+
+SUPPORT_EMAIL_ADDRESS = "Albatross <support@email.getalbatross.com>"
 
 
 # Django REST Framework Settings

@@ -43,8 +43,8 @@ class RegistrationDefaultHookSet(object):
         mail = EmailMultiAlternatives(
             subject=subject,
             body="test",
-            from_email="Andrew Askins <andrew@builtbykrit.com>",
-            reply_to=["andrew@builtbykrit.com>"],
+            from_email=settings.SUPPORT_EMAIL_ADDRESS,
+            reply_to=[settings.REPLY_TO_EMAIL_ADDRESS],
             to=[to]
         )
         mail.template_id = '3834a71f-bb2f-443a-869a-1f410fe645fa'

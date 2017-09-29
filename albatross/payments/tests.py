@@ -1,11 +1,15 @@
 import json
 
 from datetime import datetime
+from drfstripe.models import Event
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from teams.models import Membership, Team
+
+from .models import Customer
+from .receivers import handle_charge_failed, handle_subscription_deleted
 
 
 def change_card_token(client, new_token):
@@ -18,6 +22,18 @@ def change_card_token(client, new_token):
                        content_type='application/json',
                        data=json.dumps(data),
                        **header)
+
+
+def change_subscription(client, stripe_plan):
+        data = {
+            'stripe_plan': stripe_plan
+        }
+        header = {'Accept': 'application/json'}
+
+        return client.post(reverse('payments-subscription'),
+                           content_type='application/json',
+                           data=json.dumps(data),
+                           **header)
 
 
 class ChangeCardTokenTestCase(APITestCase):
@@ -109,17 +125,6 @@ class SubscriptionTestCase(APITestCase):
         assert not json_data['trial_end']
         assert not json_data['trial_start']
 
-    def change_subscription(self, stripe_plan):
-        data = {
-            'stripe_plan': stripe_plan
-        }
-        header = {'Accept': 'application/json'}
-
-        return self.client.post(reverse('payments-subscription'),
-                                content_type='application/json',
-                                data=json.dumps(data),
-                                **header)
-
     def setUp(self):
         user = User.objects.create_user(
             email='kehoffman3@gmail.com',
@@ -174,7 +179,7 @@ class SubscriptionTestCase(APITestCase):
 
     def test_subscribe(self):
         plan_id = 'agency-beta-monthly'
-        response = self.change_subscription(plan_id)
+        response = change_subscription(self.client, plan_id)
         assert response.status_code == 201
 
         json_data = json.loads(response.content.decode('utf-8'))
@@ -225,14 +230,14 @@ class SubscriptionTestCase(APITestCase):
 
     def test_get_subscription(self):
         plan_id = 'agency-beta-monthly'
-        self.change_subscription(plan_id)
+        change_subscription(self.client, plan_id)
         response = self.client.get(reverse('payments-subscription'))
         assert response.status_code == 200
         self.assert_valid_subscription_response(response, plan_id)
 
     def test_get_subscription_as_team_member(self):
         plan_id = 'agency-beta-monthly'
-        self.change_subscription(plan_id)
+        change_subscription(self.client, plan_id)
 
         user = User.objects.create_user(
             email='kehoffman3s_friend@gmail.com',
@@ -271,3 +276,38 @@ class SubscriptionTestCase(APITestCase):
         assert 'has_active_subscription' in json_data
         assert not json_data['has_active_subscription']
 
+
+class WebhookTestCase(APITestCase):
+    """We would test the subscription_made signal but it already
+    gets tested as a biproduct of all the subscription tests"""
+    def setUp(self):
+        # Create user, with a team, and authenticate
+        user = User.objects.create_user(
+            email='kehoffman3@gmail.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='kehoffman3@gmail.com'
+        )
+        self.team = Team.objects.create(
+            creator=user,
+            name='The A Team'
+        )
+        self.client.force_authenticate(user=user)
+        # Create a subscription for the user and grab their Cusotmer object
+        change_card_token(self.client, 'tok_visa')
+        plan_id = 'agency-beta-monthly'
+        change_subscription(self.client, plan_id)
+        self.stripe_customer = Customer.objects.get(user=user)
+
+    def test_charge_failed_webhook(self):
+        event = Event.objects.create(
+            customer=self.stripe_customer
+        )
+        handle_charge_failed(self, event)
+
+    def test_subscription_deleted_webhook(self):
+        event = Event.objects.create(
+            customer=self.stripe_customer
+        )
+        handle_subscription_deleted(self, event)
