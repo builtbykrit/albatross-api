@@ -63,7 +63,9 @@ def assert_user_response_is_correct(response):
             assert relationships['user']['data']['type'] == 'users'
         if item['type'] == 'profiles':
             attributes = item['attributes']
+            assert 'harvest_api_key' in attributes
             assert 'toggl_api_key' in attributes
+            assert not attributes['harvest_api_key']
             assert not attributes['toggl_api_key']
 
 
@@ -330,7 +332,46 @@ class UpdateUserProfileTestCase(APITestCase):
         )
         self.client.force_authenticate(user=self.user)
 
-    def test_update_user_profile(self):
+    def test_update_harvest_api_key_in_user_profile(self):
+        # Get user (so we have id)
+        response = self.client.get(path=reverse('users'))
+        self.assertEqual(response.status_code, 200)
+
+        json_data = json.loads(response.content.decode('utf-8'))
+
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+        user_id = json_data['data']['id']
+
+        # Update user profile
+        harvest_api_key = 'adkljkajaf01'
+        data = {
+            'data': {
+                'attributes': {
+                    'harvest_api_key': harvest_api_key
+                },
+                'id': user_id,
+                'type': 'profiles'
+            }
+        }
+        header = {'Accept': 'application/vnd.api+json'}
+        response = self.client.patch(path=reverse('users-profile',
+                                                  args=(user_id,)),
+                                     content_type='application/vnd.api+json',
+                                     data=json.dumps(data),
+                                     **header)
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+        assert 'harvest_api_key' in data['attributes']
+        assert data['attributes']['harvest_api_key'] == harvest_api_key
+
+    def test_update_toggl_api_key_in_user_profile(self):
         # Get user (so we have id)
         response = self.client.get(path=reverse('users'))
         self.assertEqual(response.status_code, 200)
