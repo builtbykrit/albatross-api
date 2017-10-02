@@ -32,6 +32,7 @@ else:
 ALLOWED_HOSTS = [
     '127.0.0.1',
     '34.195.47.179',
+    'app.getalbatross.com',
     'getalbatross.com',
     'localhost',
     'www.getalbatross.com'
