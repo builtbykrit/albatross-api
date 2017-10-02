@@ -37,7 +37,7 @@ class Project(CommonInfo):
     def update_actual(self, api_key, hookset):
         hookset.update_project_line_item_times(
             self=hookset,
-            api_key=api_key,
+            api_credentials=api_key,
             project_to_update=self
         )
 

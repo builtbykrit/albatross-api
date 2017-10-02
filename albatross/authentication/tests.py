@@ -1,5 +1,7 @@
 import json
 
+from datetime import datetime
+from dateutil import parser
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -65,9 +67,11 @@ def assert_user_response_is_correct(response):
             attributes = item['attributes']
             assert 'harvest_access_token' in attributes
             assert 'harvest_refresh_token' in attributes
+            assert 'harvest_tokens_last_refreshed_at' in attributes
             assert 'toggl_api_key' in attributes
             assert not attributes['harvest_access_token']
             assert not attributes['harvest_refresh_token']
+            assert not attributes['harvest_tokens_last_refreshed_at']
             assert not attributes['toggl_api_key']
 
 
@@ -374,8 +378,12 @@ class UpdateUserProfileTestCase(APITestCase):
         assert 'id' in data
         assert 'harvest_access_token' in data['attributes']
         assert 'harvest_refresh_token' in data['attributes']
+        assert 'harvest_tokens_last_refreshed_at' in data['attributes']
         assert data['attributes']['harvest_access_token'] == harvest_access_token
         assert data['attributes']['harvest_refresh_token'] == harvest_refresh_token
+        assert datetime.strptime(data['attributes']['harvest_tokens_last_refreshed_at'],
+                                 '%Y-%m-%dT%H:%M:%S.%fZ')
+        assert parser.parse(data['attributes']['harvest_tokens_last_refreshed_at'])
 
     def test_update_toggl_api_key_in_user_profile(self):
         # Get user (so we have id)

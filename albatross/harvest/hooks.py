@@ -17,7 +17,8 @@ class HarvestDefaultHookset(object):
         harvest = Harvest(access_token=api_credentials['access_token'],
                           client_id=settings.HARVEST_CLIENT_ID,
                           client_secret=settings.HARVEST_CLIENT_SECRET,
-                          refresh_token=api_credentials['refresh_token'])
+                          refresh_token=api_credentials['refresh_token'],
+                          tokens_last_refreshed_at=api_credentials['tokens_last_refreshed_at'])
 
         # Right now we are assuming that every project has a unique name
         # Note: Toggl requires a workspace id to get a detailed report

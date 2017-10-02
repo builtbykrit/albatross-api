@@ -43,7 +43,8 @@ class ProjectUpdateActualTimeView(GenericAPIView):
         if user_profile.harvest_access_token:
             tokens = {
                 'access_token': user_profile.harvest_access_token,
-                'refresh_token': user_profile.harvest_refresh_token
+                'refresh_token': user_profile.harvest_refresh_token,
+                'tokens_last_refreshed_at': user_profile.harvest_tokens_last_refreshed_at
             }
             return tokens, harvest_hookset
         elif user_profile.toggl_api_key:
