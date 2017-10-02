@@ -13,6 +13,7 @@ class UserProfile(models.Model):
     """
     A model to store a user's settings
     """
+    beta = models.BooleanField(default=True)
     harvest_access_token = models.CharField(max_length=200, blank=True)
     harvest_refresh_token = models.CharField(max_length=200, blank=True)
     harvest_tokens_last_refreshed_at = models.DateTimeField(blank=True,

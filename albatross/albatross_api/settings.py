@@ -77,7 +77,10 @@ INSTALLED_APPS = [
     'projects',
     'harvest',
     'toggl',
-    'django_extensions'
+    'django_extensions',
+    'drfstripe',
+    'django_cron',
+    'payments'
 ]
 
 SITE_ID = 1 # For rest_auth.registration
@@ -193,7 +196,11 @@ CORS_URLS_REGEX = r'^/api/.*$'
 
 EMAIL_BACKEND = "sgbackend.SendGridBackend"
 
+REPLY_TO_EMAIL_ADDRESS = "andrew@builtbykrit.com>"
+
 SENDGRID_API_KEY = "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"
+
+SUPPORT_EMAIL_ADDRESS = "Albatross <support@email.getalbatross.com>"
 
 
 # Django REST Framework Settings
@@ -261,3 +268,52 @@ S3_USE_SIGV4 = True
 HARVEST_CLIENT_ID = os.environ.get('HARVEST_CLIENT_ID')
 
 HARVEST_CLIENT_SECRET = os.environ.get('HARVEST_CLIENT_SECRET')
+
+
+# DRF Stripe Settings
+
+PAYMENTS_PLANS = {
+    "agency-beta-monthly": {
+        "stripe_plan_id": "agency-beta-monthly",
+        "name": "Agency ($25/month)",
+        "description": "The monthly agency subscription to Albatross",
+        "price": 25,
+        "currency": "usd",
+        "interval": "month"
+    },
+    "agency-beta-annual": {
+        "stripe_plan_id": "agency-beta-annual",
+        "name": "Agency ($250/year)",
+        "description": "The annual agency subscription to Albatross",
+        "price": 250,
+        "currency": "usd",
+        "interval": "year"
+    },
+    "freelancer-beta-monthly": {
+        "stripe_plan_id": "freelancer-beta-monthly",
+        "name": "Freelancer ($10/month)",
+        "description": "The monthly freelancer subscription to Albatross",
+        "price": 10,
+        "currency": "usd",
+        "interval": "month"
+    },
+    "freelancer-beta-annual": {
+        "stripe_plan_id": "freelancer-beta-annual",
+        "name": "Freelancer ($100/year)",
+        "description": "The annual freelancer subscription to Albatross",
+        "price": 100,
+        "currency": "usd",
+        "interval": "year"
+    },
+}
+
+STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "pk_test_xBKNwc9sDb5owErq1QkZa5I3")
+
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "sk_test_t6EpW0A1s2vSRUmO0rqwNT6D")
+
+
+# Django Cron Settings
+
+CRON_CLASSES = [
+    "albatross_api.cron.TrailExpirationCronJob",
+]

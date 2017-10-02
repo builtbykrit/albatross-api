@@ -328,6 +328,18 @@ class UpdateUserTestCase(APITestCase):
 
 
 class UpdateUserProfileTestCase(APITestCase):
+    def get_user_profile(self):
+        response = self.client.get(path=reverse('users'))
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+
+        return json_data
+
     def setUp(self):
         self.user = User.objects.create_user(
             email='kehoffman3@gmail.com',
@@ -387,16 +399,8 @@ class UpdateUserProfileTestCase(APITestCase):
 
     def test_update_toggl_api_key_in_user_profile(self):
         # Get user (so we have id)
-        response = self.client.get(path=reverse('users'))
-        self.assertEqual(response.status_code, 200)
-
-        json_data = json.loads(response.content.decode('utf-8'))
-
-        assert 'data' in json_data
-        data = json_data['data']
-        assert 'attributes' in data
-        assert 'id' in data
-        user_id = json_data['data']['id']
+        user = self.get_user_profile()
+        user_id = user['data']['id']
 
         # Update user profile
         toggl_api_key = 'adkljkajaf01'
@@ -423,4 +427,3 @@ class UpdateUserProfileTestCase(APITestCase):
         assert 'id' in data
         assert 'toggl_api_key' in data['attributes']
         assert data['attributes']['toggl_api_key'] == toggl_api_key
-
