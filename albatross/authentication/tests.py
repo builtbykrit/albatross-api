@@ -63,9 +63,11 @@ def assert_user_response_is_correct(response):
             assert relationships['user']['data']['type'] == 'users'
         if item['type'] == 'profiles':
             attributes = item['attributes']
-            assert 'harvest_api_key' in attributes
+            assert 'harvest_access_token' in attributes
+            assert 'harvest_refresh_token' in attributes
             assert 'toggl_api_key' in attributes
-            assert not attributes['harvest_api_key']
+            assert not attributes['harvest_access_token']
+            assert not attributes['harvest_refresh_token']
             assert not attributes['toggl_api_key']
 
 
@@ -332,7 +334,7 @@ class UpdateUserProfileTestCase(APITestCase):
         )
         self.client.force_authenticate(user=self.user)
 
-    def test_update_harvest_api_key_in_user_profile(self):
+    def test_update_harvest_tokens_in_user_profile(self):
         # Get user (so we have id)
         response = self.client.get(path=reverse('users'))
         self.assertEqual(response.status_code, 200)
@@ -346,11 +348,13 @@ class UpdateUserProfileTestCase(APITestCase):
         user_id = json_data['data']['id']
 
         # Update user profile
-        harvest_api_key = 'adkljkajaf01'
+        harvest_access_token = 'adkljkajaf01'
+        harvest_refresh_token = 'bdkljkajaf01'
         data = {
             'data': {
                 'attributes': {
-                    'harvest_api_key': harvest_api_key
+                    'harvest_access_token': harvest_access_token,
+                    'harvest_refresh_token': harvest_refresh_token
                 },
                 'id': user_id,
                 'type': 'profiles'
@@ -368,8 +372,10 @@ class UpdateUserProfileTestCase(APITestCase):
         data = json_data['data']
         assert 'attributes' in data
         assert 'id' in data
-        assert 'harvest_api_key' in data['attributes']
-        assert data['attributes']['harvest_api_key'] == harvest_api_key
+        assert 'harvest_access_token' in data['attributes']
+        assert 'harvest_refresh_token' in data['attributes']
+        assert data['attributes']['harvest_access_token'] == harvest_access_token
+        assert data['attributes']['harvest_refresh_token'] == harvest_refresh_token
 
     def test_update_toggl_api_key_in_user_profile(self):
         # Get user (so we have id)

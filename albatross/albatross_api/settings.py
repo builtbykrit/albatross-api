@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'invitations',
     'teams',
     'projects',
+    'harvest',
     'toggl',
     'django_extensions'
 ]
@@ -233,6 +234,7 @@ OLD_PASSWORD_FIELD_ENABLED = True
 SIGNUP_URL = 'https://getalbatross.com/signup'
 RESET_PASSWORD_URL = 'https://getalbatross.com/reset-password'
 
+
 # Django Storages Settings
 
 AWS_ACCESS_KEY_ID = os.environ.get('S3_API_KEY')
@@ -251,3 +253,10 @@ AWS_STORAGE_BUCKET_NAME = os.environ.get('S3_WEB_APP_ASSETS_BUCKET')
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
 S3_USE_SIGV4 = True
+
+
+# Harvest Settings
+
+HARVEST_CLIENT_ID = os.environ.get('HARVEST_CLIENT_ID')
+
+HARVEST_CLIENT_SECRET = os.environ.get('HARVEST_CLIENT_SECRET')

@@ -5,9 +5,13 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
+from harvest.hooks import hookset as harvest_hookset
+from teams.models import Team, Membership
+from toggl.hooks import hookset as toggl_hookset
+
 from .models import Category, Item, Project
 from .serializers import CategorySerializer, ItemSerializer, ProjectSerializer
-from teams.models import Team, Membership
+
 
 class ProjectViewSet(viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication,)
@@ -35,18 +39,29 @@ class ProjectUpdateActualTimeView(GenericAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
+    def get_api_key(self, user_profile):
+        if user_profile.harvest_access_token:
+            tokens = {
+                'access_token': user_profile.harvest_access_token,
+                'refresh_token': user_profile.harvest_refresh_token
+            }
+            return tokens, harvest_hookset
+        elif user_profile.toggl_api_key:
+            return user_profile.toggl_api_key, toggl_hookset
+
     def post(self, request, *args, **kwargs):
         project = self.get_object()
 
-        try:
-            toggl_api_key = self.request.user.profile.toggl_api_key
-        except ObjectDoesNotExist:
-            try:
-                toggl_api_key = project.team.creator.profile.toggl_api_key
-            except ObjectDoesNotExist:
-                raise ValidationError('A Toggl API key is required to import from Toggl.')
+        user_profile = self.request.user.profile
+        api_key, hookset = self.get_api_key(user_profile)
+        if not api_key:
+            user_profile = project.team.creator.profile
+            api_key, hookset = self.get_api_key(user_profile)
+            if not api_key:
+                raise ValidationError('Please login with Harvest or '
+                                      'provide a Toggl API key.')
 
-        project.update_actual(toggl_api_key)
+        project.update_actual(api_key, hookset)
         serializer = self.get_serializer(project)
         return Response(serializer.data)
 
