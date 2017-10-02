@@ -49,18 +49,25 @@ class ProjectUpdateActualTimeView(GenericAPIView):
             return tokens, harvest_hookset
         elif user_profile.toggl_api_key:
             return user_profile.toggl_api_key, toggl_hookset
+        else:
+            return None, None
 
     def post(self, request, *args, **kwargs):
         project = self.get_object()
 
-        user_profile = self.request.user.profile
-        api_key, hookset = self.get_api_key(user_profile)
-        if not api_key:
-            user_profile = project.team.creator.profile
+        try:
+            user_profile = self.request.user.profile
+            if not user_profile:
+                raise ObjectDoesNotExist()
             api_key, hookset = self.get_api_key(user_profile)
             if not api_key:
-                raise ValidationError('Please login with Harvest or '
-                                      'provide a Toggl API key.')
+                user_profile = project.team.creator.profile
+                api_key, hookset = self.get_api_key(user_profile)
+                if not api_key:
+                    raise ObjectDoesNotExist()
+        except ObjectDoesNotExist:
+            raise ValidationError('Please login with Harvest or '
+                                  'provide a Toggl API key.')
 
         project.update_actual(api_key, hookset)
         serializer = self.get_serializer(project)

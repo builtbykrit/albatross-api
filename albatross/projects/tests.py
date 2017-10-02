@@ -317,6 +317,20 @@ class ProjectViewTests(APITestCase):
         self.assertEqual(len(project2_relationships_data), 1)
         self.assertEqual(int(project2_relationships_data[0]['id']), category_product.id)
 
+    def test_update_actual_time_without_integrating_a_service_first(self):
+        project = Project.objects.create(name='My Project',
+                                         team=Team.objects.get(
+                                             name='Kritters'))
+        response = self.client.post(reverse('project-update-actual-time',
+                                            args=(project.id,)))
+        self.assertEqual(response.status_code, 400)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'errors' in json_data
+        assert 'detail' in json_data['errors'][0]
+        assert json_data['errors'][0]['detail'] == 'Please login with ' \
+                                                   'Harvest or provide ' \
+                                                   'a Toggl API key.'
+
 
 class CategoryViewTests(APITestCase):
     def setUp(self):
