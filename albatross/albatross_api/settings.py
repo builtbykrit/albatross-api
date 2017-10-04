@@ -315,5 +315,6 @@ STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "sk_test_t6EpW0A1s2vSRUm
 # Django Cron Settings
 
 CRON_CLASSES = [
+    "albatross_api.cron.RefreshHarvestTokensCronJob",
     "albatross_api.cron.TrailExpirationCronJob",
 ]

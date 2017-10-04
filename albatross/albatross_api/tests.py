@@ -5,7 +5,26 @@ from django.utils import timezone
 
 from teams.models import Team
 
-from .cron import TrailExpirationCronJob
+from .cron import RefreshHarvestTokensCronJob, TrailExpirationCronJob
+
+
+class RefreshHarvestTokensCronJobTestCase(TestCase):
+
+    def test_case_where_no_user_has_harvest_credentials(self):
+        user = User.objects.create_user(
+            email='user.1@example.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='user.1@example.com'
+        )
+        Team.objects.create(
+            creator=user,
+            name="Team"
+        )
+
+        cronjob = RefreshHarvestTokensCronJob()
+        cronjob.do()
 
 
 class TrailExpirationCronJobTestCase(TestCase):
