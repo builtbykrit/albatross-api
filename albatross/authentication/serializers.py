@@ -40,7 +40,8 @@ class MembershipSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ('toggl_api_key',)
+        fields = ('harvest_access_token', 'harvest_refresh_token',
+                  'harvest_tokens_last_refreshed_at', 'toggl_api_key',)
 
 class UserSerializer(serializers.ModelSerializer):
     included_serializers = {

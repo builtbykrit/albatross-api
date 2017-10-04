@@ -12,12 +12,13 @@ def make_item_key(item):
 
 class TogglDefaultHookset(object):
 
-    def update_project_line_item_times(self, api_key, project_to_update):
+    def update_project_line_item_times(self, api_credentials,
+                                       project_to_update):
         if not project_to_update.categories.all().exists():
             return
 
         toggl = Toggl()
-        toggl.setAPIKey(api_key)
+        toggl.setAPIKey(api_credentials)
 
         # We want to get a detailed report (list of line items)
         # for our project. That said, we don't know its id

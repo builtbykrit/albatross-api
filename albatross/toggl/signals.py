@@ -1,4 +1,4 @@
 import django.dispatch
 
 
-update_project_line_item_times = django.dispatch.Signal(providing_args=["api_key", "project"])
+pull_project_line_item_times_from_toggl = django.dispatch.Signal(providing_args=["api_key", "project"])

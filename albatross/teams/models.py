@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.core.urlresolvers import reverse
@@ -9,6 +10,10 @@ from rest_framework.exceptions import ValidationError
 from . import signals
 from .conf import settings
 from .hooks import hookset
+
+
+def fourteen_days_ahead():
+    return timezone.now() + timedelta(days=14)
 
 
 class BaseMembership(models.Model):
@@ -145,13 +150,15 @@ class BaseTeam(models.Model):
 
 
 class Team(BaseTeam):
-    name = models.CharField(max_length=100, verbose_name="name")
     created_at = models.DateTimeField(default=timezone.now,
                                       editable=False,
                                       verbose_name="created at")
     creator = models.ForeignKey(settings.AUTH_USER_MODEL,
                                 related_name="teams_created",
                                 verbose_name="creator")
+    name = models.CharField(max_length=100, verbose_name="name")
+    on_trial = models.BooleanField(default=True)
+    trial_expires_at = models.DateTimeField(default=fourteen_days_ahead)
 
     class Meta:
         verbose_name = "Team"

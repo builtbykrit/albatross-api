@@ -22,8 +22,8 @@ class PasswordResetFrom(RestAuthPasswordResetForm):
         mail = EmailMultiAlternatives(
             subject="Reset your Password",
             body="test",
-            from_email="Andrew Askins <andrew@builtbykrit.com>",
-            reply_to=["andrew@builtbykrit.com>"],
+            from_email=settings.SUPPORT_EMAIL_ADDRESS,
+            reply_to=[settings.REPLY_TO_EMAIL_ADDRESS],
             to=to_email
         )
         mail.template_id = '4bf3e329-ff7d-43b8-817c-d5e4894f78db'

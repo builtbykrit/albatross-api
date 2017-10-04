@@ -5,7 +5,6 @@ from django.db import models
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from teams.models import Team
-from toggl.hooks import hookset as toggl_hookset
 
 
 class CommonInfo(models.Model):
@@ -35,10 +34,10 @@ class Project(CommonInfo):
         estimated = sum * buffer_percentage
         return round(estimated, 2)
 
-    def update_actual(self, api_key):
-        toggl_hookset.update_project_line_item_times(
-            self=toggl_hookset,
-            api_key=api_key,
+    def update_actual(self, api_key, hookset):
+        hookset.update_project_line_item_times(
+            self=hookset,
+            api_credentials=api_key,
             project_to_update=self
         )
 
