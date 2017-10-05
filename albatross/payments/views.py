@@ -159,7 +159,7 @@ class SubscriptionView(StripeView):
                 # the subscriptions team.
                 validated_data = serializer.validated_data
                 stripe_plan = validated_data.get('stripe_plan', None)
-                customer = self.get_customer()
+                customer = self.get_customer().customer
                 subscription = customer.subscribe(stripe_plan) # this is Stripe's response
 
                 team = self.get_users_team()
