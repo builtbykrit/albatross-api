@@ -34,8 +34,8 @@ pip install -r requirements.txt
    Django doesn't neccessarily have a whole lot of magic but it is pretty opinonated, so it is important to understand the design philosophy behind it before you start programming with it.
    
 2. Run `source ./bin/activate` before you start developing or testing.
-3. To run the API locally use  `python ./manage.py develop`
-4. To run the tests use `python ./manage.py test`
+3. To run the API locally cd into the `albatross` directory and use  `python ./manage.py develop`
+4. To run the tests locally cd into the `albatross` directory and use `python ./manage.py test`
 
 ## Notes
 
