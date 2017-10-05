@@ -157,9 +157,15 @@ class SubscriptionView(StripeView):
                 #
                 # So we need to call customer.current_subscription to set
                 # the subscriptions team.
+                #
+                # Note that get_customer() returns the drfstripe.models.Customer
+                # that is related to the current User but when we create a
+                # subscription for the User we want to do it through our
+                # Customer base class so we need to call get_customer().customer
+                # instead of just get_customer().
                 validated_data = serializer.validated_data
                 stripe_plan = validated_data.get('stripe_plan', None)
-                customer = self.get_customer()
+                customer = self.get_customer().customer
                 subscription = customer.subscribe(stripe_plan) # this is Stripe's response
 
                 team = self.get_users_team()
