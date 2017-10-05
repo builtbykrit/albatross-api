@@ -13,9 +13,7 @@ cd .. && python3 -m venv /path/to/case-status-api/repo
 cd /path/to/case-status-api/repo
 printf '\nsource /path/to/albatross-api/environment_variables.sh' >> ./bin/activate
 source ./bin/activate && cd ..
-pip install cached_property
 pip install -r requirements.txt
-sed -i -e "s#set('.*')#set('=\&;:%+~,*@!()/?[]')#" ./repo/lib/python3.X/site-packages/oauthlib/common.py
 ```
 
 ## Developing and Testing
