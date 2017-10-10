@@ -1,5 +1,6 @@
 from datetime import timedelta
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import EmailMultiAlternatives
 from django_cron import CronJobBase, Schedule
 from django.db.models import Q
@@ -76,9 +77,13 @@ class TrailExpirationCronJob(CronJobBase):
             trial_expires_at__lte=timezone.now() + timedelta(days=3)
         )
         for team in teams_with_almost_expired_trials:
+            key = 'team_{}:trail_almost_expired'.format(team.id)
+            if cache.get(key):
+                pass
             self.send_email(team.creator.email,
                             team.creator.first_name,
                             'almost_expired')
+            cache.set(key, 'almost_expired', 60 * 60 * 24)
 
         teams_with_expired_trials = Team.objects.filter(
             on_trial=True,

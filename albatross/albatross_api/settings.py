@@ -318,3 +318,13 @@ CRON_CLASSES = [
     "albatross_api.cron.RefreshHarvestTokensCronJob",
     "albatross_api.cron.TrailExpirationCronJob",
 ]
+
+
+# Django Cache Settings
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache',
+    }
+}
