@@ -79,7 +79,7 @@ class TrailExpirationCronJob(CronJobBase):
         for team in teams_with_almost_expired_trials:
             key = 'team_{}:trail_almost_expired'.format(team.id)
             if cache.get(key):
-                pass
+                continue
             self.send_email(team.creator.email,
                             team.creator.first_name,
                             'almost_expired')
