@@ -394,7 +394,7 @@ class UpdateUserProfileTestCase(APITestCase):
         assert data['attributes']['harvest_access_token'] == harvest_access_token
         assert data['attributes']['harvest_refresh_token'] == harvest_refresh_token
         assert datetime.strptime(data['attributes']['harvest_tokens_last_refreshed_at'],
-                                 '%Y-%m-%dT%H:%M:%S.%fZ')
+                                 '%Y-%m-%d %H:%M:%S.%f')
         assert parser.parse(data['attributes']['harvest_tokens_last_refreshed_at'])
 
     def test_update_toggl_api_key_in_user_profile(self):
