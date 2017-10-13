@@ -74,10 +74,7 @@ class ProjectUpdateActualTimeView(GenericAPIView):
         return Response(serializer.data)
 
 
-class CategoryViewSet(mixins.CreateModelMixin,
-                      mixins.RetrieveModelMixin,
-                      mixins.UpdateModelMixin,
-                      viewsets.GenericViewSet
+class CategoryViewSet(viewsets.ModelViewSet
                       ):
     included = ['items']
     pagination_class = None
@@ -87,15 +84,9 @@ class CategoryViewSet(mixins.CreateModelMixin,
     serializer_class = CategorySerializer
 
 
-
-class ItemViewSet(mixins.CreateModelMixin,
-                  mixins.RetrieveModelMixin,
-                  mixins.UpdateModelMixin,
-                  viewsets.GenericViewSet
-                  ):
+class ItemViewSet(viewsets.ModelViewSet):
     pagination_class = None
     permission_classes = (permissions.IsAuthenticated,)
     queryset = Item.objects.all()
     resource_name = 'items'
     serializer_class = ItemSerializer
-
