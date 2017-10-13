@@ -8,7 +8,8 @@ from .views import (
     PasswordResetConfirmationView,
     UserView,
     UserDetailView,
-    UserProfileView
+    UserProfileView,
+UserProfileHarvestView
 )
 
 urlpatterns = [
@@ -28,5 +29,6 @@ urlpatterns = [
 
     url(r'^users/$', UserView.as_view(), name='users'),
     url(r'^users/(?P<pk>[0-9]+)/$', UserDetailView.as_view(), name='users-detail'),
-    url(r'^users/(?P<pk>[0-9]+)/profile/$', UserProfileView.as_view(), name='users-profile')
+    url(r'^users/(?P<pk>[0-9]+)/profile/$', UserProfileView.as_view(), name='users-profile'),
+    url(r'^users/(?P<pk>[0-9]+)/harvest/$', UserProfileHarvestView.as_view(), name='users-harvest')
 ]
