@@ -308,10 +308,11 @@ PAYMENTS_PLANS = {
     },
 }
 
-STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "pk_test_xBKNwc9sDb5owErq1QkZa5I3")
-
-STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "sk_test_t6EpW0A1s2vSRUmO0rqwNT6D")
-
+# STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY", "pk_test_xBKNwc9sDb5owErq1QkZa5I3")
+#
+# STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "sk_test_t6EpW0A1s2vSRUmO0rqwNT6D")
+STRIPE_PUBLIC_KEY = "pk_test_xBKNwc9sDb5owErq1QkZa5I3"
+STRIPE_SECRET_KEY = "sk_test_t6EpW0A1s2vSRUmO0rqwNT6D"
 
 # Django Cron Settings
 
