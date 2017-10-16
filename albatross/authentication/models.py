@@ -3,8 +3,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import timezone
-
+import datetime
 
 UserModel = get_user_model()
 
@@ -16,7 +15,7 @@ class UserProfile(models.Model):
     beta = models.BooleanField(default=True)
     harvest_access_token = models.CharField(max_length=200, blank=True)
     harvest_refresh_token = models.CharField(max_length=200, blank=True)
-    harvest_tokens_last_refreshed_at = models.DateTimeField(blank=True,
+    harvest_tokens_last_refreshed_at = models.CharField(max_length=200, blank=True,
                                                             null=True)
     toggl_api_key = models.CharField(max_length=200, blank=True)
     user = models.OneToOneField(
@@ -38,7 +37,7 @@ class UserProfile(models.Model):
             or attrname == 'harvest_refresh_token'):
             super(UserProfile, self).__setattr__(
                 'harvest_tokens_last_refreshed_at',
-                timezone.now()
+                str(datetime.datetime.now())
             )
 
 @receiver(post_save, sender=UserModel)

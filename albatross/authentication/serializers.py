@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework_json_api import serializers
 from rest_auth.serializers import PasswordResetSerializer as RestAuthPasswordResetSerializer
 from rest_framework_json_api.relations import ResourceRelatedField
+from rest_framework import serializers as RestSerializer
 
 from teams.models import Membership, Team
 from .forms import PasswordResetFrom
@@ -71,3 +72,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     class JSONAPIMeta:
         included_resources = ['memberships', 'profile']
+
+class HarvestSerializer(RestSerializer.Serializer):
+    authorization_code = RestSerializer.CharField(required=True, allow_blank=False)
