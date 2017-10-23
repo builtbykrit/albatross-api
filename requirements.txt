@@ -24,6 +24,7 @@ inflection==0.3.1
 itypes==1.1.0
 Jinja2==2.9.6
 jsonfield==2.0.2
+mailchimp3==2.0.10
 Markdown==2.6.9
 MarkupSafe==1.0
 oauthlib==2.0.4
