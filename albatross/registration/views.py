@@ -38,7 +38,7 @@ class UserRegistrationView(CreateAPIView):
 
             subscribe_to_newsletter = request.data.get('subscribe_to_newsletter', False)
             if subscribe_to_newsletter and not settings.DEBUG:
-                email_address = user.email_address
+                email_address = user.email
                 mailchimp_client = MailChimp(
                     mc_user=os.environ.get('MAILCHIMP_USER_NAME'),
                     mc_secret=os.environ.get('MAILCHIMP_API_KEY')
