@@ -9,7 +9,9 @@ from python_http_client.exceptions import BadRequestsError
 
 from authentication.models import UserProfile
 from harvest.utils import TokensManager
-from teams.models import Team
+from teams.models import Team, Membership
+from harvest.hooks import hookset as harvest_hookset
+from toggl.hooks import hookset as toggl_hookset
 
 
 class RefreshHarvestTokensCronJob(CronJobBase):
@@ -20,7 +22,7 @@ class RefreshHarvestTokensCronJob(CronJobBase):
 
     def do(self):
         harvest_users = UserProfile.objects.filter(
-            ~Q(harvest_access_token = '')
+            ~Q(harvest_access_token='')
         )
         for user in harvest_users:
             token_manager = TokensManager(
@@ -95,3 +97,46 @@ class TrailExpirationCronJob(CronJobBase):
             self.send_email(team.creator.email,
                             team.creator.first_name,
                             'expired')
+
+
+class ImportHoursCronJob(CronJobBase):
+    RUN_AT_TIMES = ['05:00']
+    schedule = Schedule(run_at_times=RUN_AT_TIMES)
+
+    code = 'albatross_api.cron.ImportHoursCronJob'
+
+    @staticmethod
+    def update_projects(user, api_key, hookset):
+        try:
+            membership = Membership.objects.get(user=user)
+            projects = membership.team.projects.all()
+            for project in projects:
+                print(api_key)
+                project.update_actual(api_key, hookset)
+        except Membership.DoesNotExist as e:
+            pass
+
+    def do(self):
+        harvest_users = UserProfile.objects.filter(
+            ~Q(harvest_access_token='')
+        )
+
+        for user_profile in harvest_users:
+            tokens = {
+                'access_token': user_profile.harvest_access_token,
+                'refresh_token': user_profile.harvest_refresh_token,
+                'tokens_last_refreshed_at': user_profile.harvest_tokens_last_refreshed_at
+            }
+            print(tokens)
+
+            self.update_projects(user_profile.user, tokens, harvest_hookset)
+
+        toggl_users = UserProfile.objects.filter(
+            ~Q(toggl_api_key='')
+        )
+
+        for user_profile in toggl_users:
+            api_key = user_profile.toggl_api_key
+
+            self.update_projects(user_profile.user, api_key, toggl_hookset)
+

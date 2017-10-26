@@ -5,11 +5,10 @@ from django.utils import timezone
 
 from teams.models import Team
 
-from .cron import RefreshHarvestTokensCronJob, TrailExpirationCronJob
+from .cron import RefreshHarvestTokensCronJob, TrailExpirationCronJob, ImportHoursCronJob
 
 
 class RefreshHarvestTokensCronJobTestCase(TestCase):
-
     def test_case_where_no_user_has_harvest_credentials(self):
         user = User.objects.create_user(
             email='user.1@example.com',
@@ -66,7 +65,7 @@ class TrailExpirationCronJobTestCase(TestCase):
         team_with_nearly_expired_trial = Team.objects.create(
             creator=user_with_nearly_expired_trial,
             name="Team with nearly expired trial",
-            trial_expires_at= timezone.now() + timedelta(hours=71)
+            trial_expires_at=timezone.now() + timedelta(hours=71)
         )
 
         user_with_expired_trial = User.objects.create_user(
@@ -79,7 +78,7 @@ class TrailExpirationCronJobTestCase(TestCase):
         team_with_expired_trial = Team.objects.create(
             creator=user_with_nearly_expired_trial,
             name="Team with expired trial",
-            trial_expires_at= timezone.now() - timedelta(hours=1)
+            trial_expires_at=timezone.now() - timedelta(hours=1)
         )
 
         # Run cronjob
@@ -98,3 +97,21 @@ class TrailExpirationCronJobTestCase(TestCase):
         team_with_expired_trial = Team.objects.get(
             id=team_with_expired_trial.id)
         assert team_with_expired_trial.on_trial == False
+
+
+class ImportHoursCronJobTestCase(TestCase):
+    def test_case_where_no_user_has_toggl_harvest_credentials(self):
+        user = User.objects.create_user(
+            email='user.1@example.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='user.1@example.com'
+        )
+        Team.objects.create(
+            creator=user,
+            name="Team"
+        )
+
+        cronjob = ImportHoursCronJob
+        cronjob.do()
