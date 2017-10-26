@@ -77,6 +77,8 @@ class Toggl():
     def getTags(self):
         """return all the tags for a user"""
         response = self.request(Endpoints.TAGS)
+        if 'tags' not in response['data']:
+            return None
         return response['data']['tags']
 
     #-----------------------------------
