@@ -113,7 +113,10 @@ class Toggl():
     #--------------------------------
     def getClients(self):
         """return all clients that are visable to a user"""
-        return self.request(Endpoints.CLIENTS)
+        clients = self.request(Endpoints.CLIENTS)
+        if clients is None:
+            return []
+        return clients
 
     def getClient(self, name=None, id=None):
         """return the first workspace that matches a given name or id"""
