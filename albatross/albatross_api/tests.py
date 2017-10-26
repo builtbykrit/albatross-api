@@ -10,8 +10,9 @@ from harvest.utils import TokensManager
 from authentication.models import UserProfile
 
 from teams.models import Team
+from projects.models import Project, Category, Item
 
-from .cron import RefreshHarvestTokensCronJob, TrailExpirationCronJob, ImportHoursCronJob
+from .cron import RefreshHarvestTokensCronJob, TrailExpirationCronJob, ImportHoursCronJob, WeeklyProgressCronJob
 
 
 class RefreshHarvestTokensCronJobTestCase(TestCase):
@@ -150,3 +151,43 @@ class ImportHoursCronJobTestCase(TestCase):
 
         cronjob = ImportHoursCronJob()
         cronjob.do()
+
+class WeeklyProgressCronJobTestCase(TestCase):
+    CATEGORY_NAME = 'Frontend'
+    PROJECT_NAME = 'My Project'
+    ITEM_DESCRIPTION = 'Login'
+
+    def setUp(self):
+        user = User.objects.create_user(
+            email='kehoffman3@gmail.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='kehoffman3@gmail.com'
+        )
+        team = Team.objects.create(name='Kritters', creator=user)
+        project = Project.objects.create(name=self.PROJECT_NAME, team=team)
+        category = Category.objects.create(name=self.CATEGORY_NAME, project=project)
+        Item.objects.create(description=self.ITEM_DESCRIPTION, actual=5, estimated=20, category=category)
+
+    def test_weekly_hours(self):
+        cronjob = WeeklyProgressCronJob()
+        project = Project.objects.get(name=self.PROJECT_NAME)
+        hours = cronjob.get_project_weekly_hours(project)
+
+        self.assertEqual(hours, 5)
+        self.assertEqual(project.actual, project.last_weeks_hours)
+
+    def test_get_projects_data(self):
+        user = User.objects.get(email='kehoffman3@gmail.com')
+        team = Team.objects.get(name='Kritters', creator=user)
+        project = Project.objects.create(name='Project', team=team, last_weeks_hours=6)
+        category = Category.objects.create(name='Category', project=project)
+        Item.objects.create(description='Item', actual=12, estimated=25, category=category)
+
+        cronjob = WeeklyProgressCronJob()
+        projects_data = cronjob.get_projects_data_for_user(user)
+
+        self.assertIn({"weekly_hours", 6}, projects_data)
+        self.assertIn({"weekly_hours", 5}, projects_data)
+

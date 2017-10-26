@@ -1,19 +1,22 @@
-import mock
-
 from datetime import timedelta
-from django.conf import settings
-from django.core.cache import cache
-from django.core.mail import EmailMultiAlternatives
-from django_cron import CronJobBase, Schedule
-from django.db.models import Q
-from django.utils import timezone
-from python_http_client.exceptions import BadRequestsError
+from datetime import date
 
 from authentication.models import UserProfile
-from harvest.utils import TokensManager
-from teams.models import Team, Membership
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.core.mail import EmailMultiAlternatives
+from django.db.models import Q
+from django.utils import timezone
+from django_cron import CronJobBase, Schedule
 from harvest.hooks import hookset as harvest_hookset
+from harvest.utils import TokensManager
+from python_http_client.exceptions import BadRequestsError
+from teams.models import Team, Membership
 from toggl.hooks import hookset as toggl_hookset
+from django.db import transaction
+
+UserModel = get_user_model()
 
 
 class RefreshHarvestTokensCronJob(CronJobBase):
@@ -121,7 +124,6 @@ class ImportHoursCronJob(CronJobBase):
             membership = Membership.objects.get(user=user)
             projects = membership.team.projects.all()
             for project in projects:
-                print(api_key)
                 project.update_actual(api_key, hookset)
         except Membership.DoesNotExist as e:
             pass
@@ -149,3 +151,42 @@ class ImportHoursCronJob(CronJobBase):
             api_key = user_profile.toggl_api_key
 
             self.update_projects(user_profile.user, api_key, toggl_hookset)
+
+
+class WeeklyProgressCronJob(CronJobBase):
+    RUN_AT_TIMES = ['06:00']
+    schedule = Schedule(run_at_times=RUN_AT_TIMES)
+
+    code = 'albatross_api.cron.WeeklyProgressCronJob'
+
+    @staticmethod
+    def get_project_weekly_hours(project):
+        hours_diff = project.actual - project.last_weeks_hours
+        weekly_hours = hours_diff if hours_diff > 0 else 0
+        project.last_weeks_hours = project.actual
+        project.save()
+        return weekly_hours
+
+    @transaction.atomic
+    def get_projects_data_for_user(self,user):
+        try:
+            membership = Membership.objects.get(user=user)
+            projects = membership.team.projects.all()
+            projects_data = []
+            for project in projects:
+                weekly_hours = self.get_project_weekly_hours(project)
+                projects_data.append({"weekly_hours", weekly_hours})
+            return projects_data
+        except Membership.DoesNotExist:
+            pass
+
+
+    def do(self):
+        #if date.today().weekday() != 0:
+        #    return
+        users = UserModel.objects.all()
+        for user in users:
+            self.get_projects_data_for_user(user)
+
+
+
