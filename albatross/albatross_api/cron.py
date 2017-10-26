@@ -121,7 +121,6 @@ class ImportHoursCronJob(CronJobBase):
             membership = Membership.objects.get(user=user)
             projects = membership.team.projects.all()
             for project in projects:
-                print(api_key)
                 project.update_actual(api_key, hookset)
         except Membership.DoesNotExist as e:
             pass

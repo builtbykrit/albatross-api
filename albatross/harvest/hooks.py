@@ -1,5 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+
 from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
+
 from .utils import Harvest
 
 
@@ -10,6 +14,7 @@ def make_item_key(item):
 
 class HarvestDefaultHookset(object):
 
+    @transaction.atomic
     def update_project_line_item_times(self, api_credentials, project_to_update):
         if not project_to_update.categories.all().exists():
             return
@@ -76,6 +81,9 @@ class HarvestDefaultHookset(object):
             line_item = line_items[item_key]
             line_item.actual = total
             line_item.save()
+
+        project_to_update.last_imported_date = timezone.make_aware(datetime.now())
+        project_to_update.save()
 
 
 class HookProxy(object):
