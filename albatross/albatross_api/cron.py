@@ -1,3 +1,5 @@
+import mock
+
 from datetime import timedelta
 from django.conf import settings
 from django.core.cache import cache
@@ -37,6 +39,16 @@ class RefreshHarvestTokensCronJob(CronJobBase):
                 user.harvest_refresh_token = new_tokens['refresh_token']['value']
                 user.harvest_tokens_last_refreshed_at = new_tokens['refresh_token'][token_manager.last_refresh_time_key]
                 user.save()
+            else:
+                # If new tokens were not obtained and the access token is not fresh, then the user needs to
+                # reauthenticate
+                print(token_manager.is_access_token_fresh())
+                if not token_manager.is_access_token_fresh():
+                    user.harvest_access_token = ""
+                    user.harvest_refresh_token = ""
+                    user.harvest_tokens_last_refreshed_at = None
+                    user.save()
+                    print(user.harvest_access_token)
 
 
 class TrailExpirationCronJob(CronJobBase):
@@ -139,4 +151,3 @@ class ImportHoursCronJob(CronJobBase):
             api_key = user_profile.toggl_api_key
 
             self.update_projects(user_profile.user, api_key, toggl_hookset)
-

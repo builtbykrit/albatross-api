@@ -40,6 +40,8 @@ class TokensManager(TokensManagerSuper):
 
     def refresh_access_token(self):
         json_data = self._refresh_access_token_impl()
+        if json_data is None:
+            return None
         self.last_refresh_time = timezone.now()
         return {
             'access_token': {
@@ -64,6 +66,8 @@ class TokensManager(TokensManagerSuper):
         )
         headers = {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json'}
         resp = requests.post('https://api.harvestapp.com/v2/oauth2/token', headers=headers, data=body, verify=False)
+        if resp.status_code >= 400:
+            return None
         return json.loads(resp.content.decode())
 
 

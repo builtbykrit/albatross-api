@@ -1,7 +1,13 @@
+import mock
+import unittest
+from mock import MagicMock
+
 from datetime import timedelta
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
+from harvest.utils import TokensManager
+from authentication.models import UserProfile
 
 from teams.models import Team
 
@@ -25,6 +31,35 @@ class RefreshHarvestTokensCronJobTestCase(TestCase):
         cronjob = RefreshHarvestTokensCronJob()
         cronjob.do()
 
+    @mock.patch('harvest.utils.TokensManager')
+    def test_case_where_user_has_invalid_harvest_credentials(self, mock_token_manager):
+        user = User.objects.create_user(
+            email='user.2@example.com',
+            first_name='Test',
+            last_name='Account',
+            password='password125',
+            username='user.2@example.com'
+        )
+
+        user.profile.harvest_access_token = "123"
+        user.profile.harvest_refresh_token = "456"
+        user.profile.harvest_tokens_last_refreshed_at = "2017-10-01 15:51:32.311970"
+        user.save()
+        Team.objects.create(
+            creator=user,
+            name="Team"
+        )
+        mock_token_manager.refresh_access_token_by_demand.return_value = None
+        mock_token_manager.is_access_token_fresh.return_value = False
+
+        cronjob = RefreshHarvestTokensCronJob()
+        cronjob.do()
+
+        user_profile = UserProfile.objects.get(user=user)
+
+        self.assertEqual(user_profile.harvest_access_token, "")
+        self.assertEqual(user_profile.harvest_refresh_token, "")
+        self.assertEqual(user_profile.harvest_tokens_last_refreshed_at, None)
 
 class TrailExpirationCronJobTestCase(TestCase):
     ACCOUNT_CREDENTIALS = {
@@ -102,16 +137,16 @@ class TrailExpirationCronJobTestCase(TestCase):
 class ImportHoursCronJobTestCase(TestCase):
     def test_case_where_no_user_has_toggl_harvest_credentials(self):
         user = User.objects.create_user(
-            email='user.1@example.com',
+            email='user.3@example.com',
             first_name='Test',
             last_name='Account',
             password='password125',
-            username='user.1@example.com'
+            username='user.3@example.com'
         )
         Team.objects.create(
             creator=user,
             name="Team"
         )
 
-        cronjob = ImportHoursCronJob
+        cronjob = ImportHoursCronJob()
         cronjob.do()
