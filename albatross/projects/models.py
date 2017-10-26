@@ -19,6 +19,7 @@ class Project(CommonInfo):
     buffer = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     name = models.CharField(max_length=200)
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='projects')
+    last_weeks_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     @property
     def actual(self):
