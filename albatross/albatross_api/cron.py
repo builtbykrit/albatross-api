@@ -42,13 +42,11 @@ class RefreshHarvestTokensCronJob(CronJobBase):
             else:
                 # If new tokens were not obtained and the access token is not fresh, then the user needs to
                 # reauthenticate
-                print(token_manager.is_access_token_fresh())
                 if not token_manager.is_access_token_fresh():
                     user.harvest_access_token = ""
                     user.harvest_refresh_token = ""
                     user.harvest_tokens_last_refreshed_at = None
                     user.save()
-                    print(user.harvest_access_token)
 
 
 class TrailExpirationCronJob(CronJobBase):
