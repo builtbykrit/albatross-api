@@ -4,6 +4,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
+from django.contrib.postgres.fields import ArrayField
 from teams.models import Team
 
 
@@ -17,10 +18,11 @@ class CommonInfo(models.Model):
 
 class Project(CommonInfo):
     buffer = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
-    name = models.CharField(max_length=200)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='projects')
     last_weeks_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     last_imported_date = models.DateTimeField(null=True, blank=True)
+    name = models.CharField(max_length=200)
+    previous_weeks_hours = ArrayField(models.DecimalField(max_digits=10, decimal_places=2), blank=True, default=list)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='projects')
 
     @property
     def actual(self):
