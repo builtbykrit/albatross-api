@@ -13,6 +13,7 @@ django-cors-headers==2.1.0
 django-cron==0.5.0
 django-extensions==1.9.0
 django-jsonfield==1.0.1
+django-picklefield==1.0.0
 django-rest-auth==0.9.1
 -e git+https://github.com/Guest007/django-rest-framework-stripe.git@905b2f6b9bbb06acb46d16f99e91de9f541289cc#egg=django_rest_framework_stripe
 django-storages==1.6.5

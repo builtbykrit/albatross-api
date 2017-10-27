@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.contrib.postgres.fields import ArrayField
+from picklefield.fields import PickledObjectField
 from teams.models import Team
 
 
@@ -21,7 +22,7 @@ class Project(CommonInfo):
     last_weeks_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     last_imported_date = models.DateTimeField(null=True, blank=True)
     name = models.CharField(max_length=200)
-    previous_weeks_hours = ArrayField(models.DecimalField(max_digits=10, decimal_places=2), blank=True, default=list)
+    previous_weeks_hours = ArrayField(PickledObjectField(), blank=True, default=list)
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='projects')
 
     @property
