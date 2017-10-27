@@ -11,6 +11,7 @@ from teams.models import Team
 
 class CategoryModelTestCase(TestCase):
     def setUp(self):
+        Team.objects.create(name='Krit', creator_id=1)
         project = Project.objects.create(name='My Project', team=Team.objects.get(name='Krit'))
         Category.objects.create(name='Backend', project=project)
 
@@ -90,6 +91,7 @@ class ProjectModelTestCases(TestCase):
 
 class ProjectViewTests(APITestCase):
     def setUp(self):
+        Team.objects.create(name='Krit', creator_id=1)
         user = User.objects.create_user(
             email='kehoffman3@gmail.com',
             first_name='Test',
