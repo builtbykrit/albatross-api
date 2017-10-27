@@ -1,7 +1,8 @@
 from datetime import timedelta
 from datetime import date
-
+import itertools
 from authentication.models import UserProfile
+from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -15,6 +16,8 @@ from python_http_client.exceptions import BadRequestsError
 from teams.models import Team, Membership
 from toggl.hooks import hookset as toggl_hookset
 from django.db import transaction
+
+from enum import Enum
 
 UserModel = get_user_model()
 
@@ -159,34 +162,99 @@ class WeeklyProgressCronJob(CronJobBase):
 
     code = 'albatross_api.cron.WeeklyProgressCronJob'
 
+    class Status(Enum):
+        OVER = 1
+        CLOSE = 2
+        UNDER = 3
+
+    def get_status(self, estimated, actual):
+        hours_diff = estimated - actual
+        if hours_diff < 0:
+            return self.Status.OVER
+        elif hours_diff < estimated * Decimal(.1):
+            return self.Status.CLOSE
+        else:
+            return self.Status.UNDER
+
     @staticmethod
     def get_project_weekly_hours(project):
         hours_diff = project.actual - project.last_weeks_hours
         weekly_hours = hours_diff if hours_diff > 0 else 0
         project.last_weeks_hours = project.actual
+
+        # Store last weeks hours into previous weeks hours
+        previous_weeks_hours = project.previous_weeks_hours
+        if previous_weeks_hours is None:
+            previous_weeks_hours = []
+
+        previous_weeks_hours.insert(0, {timezone.now().strftime('%B %d'), weekly_hours})
+        project.previous_weeks_hours = previous_weeks_hours
         project.save()
-        return weekly_hours
+
+        return previous_weeks_hours
 
     @transaction.atomic
-    def get_projects_data_for_user(self,user):
+    def get_projects_data_for_user(self, user):
         try:
             membership = Membership.objects.get(user=user)
             projects = membership.team.projects.all()
             projects_data = []
             for project in projects:
-                weekly_hours = self.get_project_weekly_hours(project)
-                projects_data.append({"weekly_hours", weekly_hours})
+                project_data = {}
+
+                project_data["previous_weeks_hours"] = self.get_project_weekly_hours(project)
+                project_data["name"] = project.name
+
+                estimated = project.estimated
+                actual = project.actual
+
+                project_data["estimated"] = estimated
+                project_data["actual"] = actual
+                project_data["hours_diff"] = estimated - actual
+                project_data["status"] = self.get_status(estimated=estimated, actual=actual)
+                project_data["id"] = project.id
+
+                items_under = 0
+                items_close = 0
+                items_over = 0
+                for category in project.categories.all():
+                    for item in category.items.all():
+                        item_status = self.get_status(estimated=item.estimated, actual=item.actual)
+                        if item_status is self.Status.UNDER:
+                            items_under += 1
+                        elif item_status is self.Status.CLOSE:
+                            items_close += 1
+                        else:
+                            items_over += 1
+
+                project_data["items_under"] = items_under
+                project_data["items_close"] = items_close
+                project_data["items_over"] = items_over
+
+                projects_data.append(project_data)
+
             return projects_data
         except Membership.DoesNotExist:
             pass
 
-
     def do(self):
-        #if date.today().weekday() != 0:
+        # if date.today().weekday() != 0:
         #    return
         users = UserModel.objects.all()
+
+        report_start = date.today() - timedelta(days=7)
+        report_end = date.today()
+
+        date_range = '%s - %s' % (report_start.strftime('%B %d'), report_end.strftime('%B %d'))
+
         for user in users:
-            self.get_projects_data_for_user(user)
+            projects_data = self.get_projects_data_for_user(user)
+            user_first_name = user.first_name
+            projects_previous_hours = []
+            for project_data in projects_data:
+                projects_previous_hours = project_data['previous_weeks_hours']
+            team_previous_hours = [sum(x) for x in itertools.zip_longest(*projects_previous_hours, fillvalue=0)]
 
-
-
+            # If the team has not tracked any hours this week, dont send an email
+            if team_previous_hours[0] == 0:
+                continue

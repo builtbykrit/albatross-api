@@ -26,7 +26,7 @@ class RefreshHarvestTokensCronJobTestCase(TestCase):
         )
         Team.objects.create(
             creator=user,
-            name="Team"
+            name='Team'
         )
 
         cronjob = RefreshHarvestTokensCronJob()
@@ -44,13 +44,13 @@ class RefreshHarvestTokensCronJobTestCase(TestCase):
             username='user.2@example.com'
         )
 
-        user.profile.harvest_access_token = "123"
-        user.profile.harvest_refresh_token = "456"
-        user.profile.harvest_tokens_last_refreshed_at = "2017-10-01 15:51:32.311970"
+        user.profile.harvest_access_token = '123'
+        user.profile.harvest_refresh_token = '456'
+        user.profile.harvest_tokens_last_refreshed_at = '2017-10-01 15:51:32.311970'
         user.save()
         Team.objects.create(
             creator=user,
-            name="Team"
+            name='Team'
         )
         mock_refresh_access_token_by_demand.return_value = None
         mock_is_access_token_fresh.return_value = False
@@ -60,8 +60,8 @@ class RefreshHarvestTokensCronJobTestCase(TestCase):
 
         user_profile = UserProfile.objects.get(user=user)
 
-        self.assertEqual(user_profile.harvest_access_token, "")
-        self.assertEqual(user_profile.harvest_refresh_token, "")
+        self.assertEqual(user_profile.harvest_access_token, '')
+        self.assertEqual(user_profile.harvest_refresh_token, '')
         self.assertEqual(user_profile.harvest_tokens_last_refreshed_at, None)
 
 class TrailExpirationCronJobTestCase(TestCase):
@@ -90,7 +90,7 @@ class TrailExpirationCronJobTestCase(TestCase):
         )
         team = Team.objects.create(
             creator=user,
-            name="Team"
+            name='Team'
         )
 
         user_with_nearly_expired_trial = User.objects.create_user(
@@ -102,7 +102,7 @@ class TrailExpirationCronJobTestCase(TestCase):
         )
         team_with_nearly_expired_trial = Team.objects.create(
             creator=user_with_nearly_expired_trial,
-            name="Team with nearly expired trial",
+            name='Team with nearly expired trial',
             trial_expires_at=timezone.now() + timedelta(hours=71)
         )
 
@@ -115,7 +115,7 @@ class TrailExpirationCronJobTestCase(TestCase):
         )
         team_with_expired_trial = Team.objects.create(
             creator=user_with_nearly_expired_trial,
-            name="Team with expired trial",
+            name='Team with expired trial',
             trial_expires_at=timezone.now() - timedelta(hours=1)
         )
 
@@ -148,7 +148,7 @@ class ImportHoursCronJobTestCase(TestCase):
         )
         Team.objects.create(
             creator=user,
-            name="Team"
+            name='Team'
         )
 
         cronjob = ImportHoursCronJob()
@@ -171,13 +171,15 @@ class WeeklyProgressCronJobTestCase(TestCase):
         project = Project.objects.create(name=self.PROJECT_NAME, team=team)
         category = Category.objects.create(name=self.CATEGORY_NAME, project=project)
         Item.objects.create(description=self.ITEM_DESCRIPTION, actual=5, estimated=20, category=category)
+        Item.objects.create(description='Another item', actual=25, estimated=20, category=category)
+        Item.objects.create(description='Yet Another', actual=19, estimated=20, category=category)
 
     def test_weekly_hours(self):
         cronjob = WeeklyProgressCronJob()
         project = Project.objects.get(name=self.PROJECT_NAME)
         hours = cronjob.get_project_weekly_hours(project)
 
-        self.assertEqual(hours, 5)
+        self.assertEqual(hours[0], {timezone.now().strftime('%B %d'), 49})
         self.assertEqual(project.actual, project.last_weeks_hours)
 
     def test_get_projects_data(self):
@@ -185,11 +187,31 @@ class WeeklyProgressCronJobTestCase(TestCase):
         team = Team.objects.get(name='Kritters', creator=user)
         project = Project.objects.create(name='Project', team=team, last_weeks_hours=6)
         category = Category.objects.create(name='Category', project=project)
-        Item.objects.create(description='Item', actual=12, estimated=25, category=category)
+        Item.objects.create(description='Item', actual=24, estimated=25, category=category)
 
         cronjob = WeeklyProgressCronJob()
         projects_data = cronjob.get_projects_data_for_user(user)
 
-        self.assertIn({"weekly_hours", 6}, projects_data)
-        self.assertIn({"weekly_hours", 5}, projects_data)
+        firstProjectIndex = 0 if projects_data[0]['name'] == self.PROJECT_NAME else 1
+        secondProjectIndex = 0 if firstProjectIndex == 1 else 1
+
+        self.assertEquals(projects_data[firstProjectIndex]['estimated'], 60)
+        self.assertEquals(projects_data[firstProjectIndex]['actual'], 49)
+        self.assertEquals(projects_data[firstProjectIndex]['hours_diff'], 11)
+        self.assertEquals(projects_data[firstProjectIndex]['name'], self.PROJECT_NAME)
+        self.assertEquals(projects_data[firstProjectIndex]['status'], cronjob.Status.UNDER)
+        self.assertEquals(projects_data[firstProjectIndex]['id'], Project.objects.get(name=self.PROJECT_NAME).id)
+        self.assertEquals(projects_data[firstProjectIndex]['items_under'], 1)
+        self.assertEquals(projects_data[firstProjectIndex]['items_close'], 1)
+        self.assertEquals(projects_data[firstProjectIndex]['items_over'], 1)
+
+        self.assertEquals(projects_data[secondProjectIndex]['estimated'], 25)
+        self.assertEquals(projects_data[secondProjectIndex]['actual'], 24)
+        self.assertEquals(projects_data[secondProjectIndex]['hours_diff'], 1)
+        self.assertEquals(projects_data[secondProjectIndex]['name'], 'Project')
+        self.assertEquals(projects_data[secondProjectIndex]['status'], cronjob.Status.CLOSE)
+        self.assertEquals(projects_data[secondProjectIndex]['id'], project.id)
+        self.assertEquals(projects_data[secondProjectIndex]['items_under'], 0)
+        self.assertEquals(projects_data[secondProjectIndex]['items_close'], 1)
+        self.assertEquals(projects_data[secondProjectIndex]['items_over'], 0)
 
