@@ -5,14 +5,25 @@ from rest_framework.test import APITestCase, APIClient
 from django.urls import reverse
 import json
 
+from django.contrib.auth import get_user_model
 from .models import Project, Category, Item
 from teams.models import Team
+
+UserModel = get_user_model()
 
 
 class CategoryModelTestCase(TestCase):
     def setUp(self):
-        Team.objects.create(name='Krit', creator_id=1)
-        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Krit'))
+        user = UserModel.objects.create(
+            email='test@test.com',
+            first_name='Tester',
+            last_name='Account',
+            password='password125',
+            username='test@test.com'
+        )
+
+        team = Team.objects.create(name='Krit', creator=user)
+        project = Project.objects.create(name='My Project', team=team)
         Category.objects.create(name='Backend', project=project)
 
     def test_no_item(self):
@@ -44,7 +55,16 @@ class CategoryModelTestCase(TestCase):
 
 class ProjectModelTestCases(TestCase):
     def setUp(self):
-        Project.objects.create(name='My Project', team=Team.objects.get(name='Krit'))
+        user = UserModel.objects.create(
+            email='test@test.com',
+            first_name='Tester',
+            last_name='Account',
+            password='password125',
+            username='test@test.com'
+        )
+
+        team = Team.objects.create(name='Krit', creator=user)
+        Project.objects.create(name='My Project', team=team)
 
     def test_no_categories(self):
         """
@@ -91,7 +111,14 @@ class ProjectModelTestCases(TestCase):
 
 class ProjectViewTests(APITestCase):
     def setUp(self):
-        Team.objects.create(name='Krit', creator_id=1)
+        user = UserModel.objects.create(
+            email='test@test.com',
+            first_name='Tester',
+            last_name='Account',
+            password='password125',
+            username='test@test.com'
+        )
+        Team.objects.create(name='Krit', creator=user)
         user = User.objects.create_user(
             email='kehoffman3@gmail.com',
             first_name='Test',
