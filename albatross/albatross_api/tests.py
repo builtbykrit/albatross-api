@@ -32,8 +32,10 @@ class RefreshHarvestTokensCronJobTestCase(TestCase):
         cronjob = RefreshHarvestTokensCronJob()
         cronjob.do()
 
-    @mock.patch('harvest.utils.TokensManager')
-    def test_case_where_user_has_invalid_harvest_credentials(self, mock_token_manager):
+    @mock.patch('harvest.utils.TokensManager.refresh_access_token_by_demand')
+    @mock.patch('harvest.utils.TokensManager.is_access_token_fresh')
+
+    def test_case_where_user_has_invalid_harvest_credentials(self, mock_refresh_access_token_by_demand, mock_is_access_token_fresh):
         user = User.objects.create_user(
             email='user.2@example.com',
             first_name='Test',
@@ -50,8 +52,8 @@ class RefreshHarvestTokensCronJobTestCase(TestCase):
             creator=user,
             name="Team"
         )
-        mock_token_manager.refresh_access_token_by_demand.return_value = None
-        mock_token_manager.is_access_token_fresh.return_value = False
+        mock_refresh_access_token_by_demand.return_value = None
+        mock_is_access_token_fresh.return_value = False
 
         cronjob = RefreshHarvestTokensCronJob()
         cronjob.do()

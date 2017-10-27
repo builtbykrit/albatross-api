@@ -2,6 +2,7 @@ import json
 
 from django.contrib.auth.models import User
 from django.urls import reverse
+from datetime import datetime, timedelta
 from rest_framework.test import APITestCase, APIClient
 from authentication.models import UserProfile
 from projects.models import Category, Item, Project
@@ -100,7 +101,13 @@ class TogglTestCase(APITestCase):
          assert 'buffer' in attributes
          assert 'estimated' in attributes
          assert 'name' in attributes
+         assert 'last_imported_date' in attributes
          assert attributes['actual'] > 79
          assert attributes['buffer'] == 0
          assert attributes['estimated'] == 114
          assert attributes['name'] == self.project.name
+
+         assert (datetime.strptime(attributes['last_imported_date'],
+                                   "%Y-%m-%dT%H:%M:%S.%fZ")
+                 - datetime.now()
+                 < timedelta(seconds=15))

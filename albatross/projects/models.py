@@ -20,6 +20,7 @@ class Project(CommonInfo):
     name = models.CharField(max_length=200)
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='projects')
     last_weeks_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    last_imported_date = models.DateTimeField(null=True, blank=True)
 
     @property
     def actual(self):

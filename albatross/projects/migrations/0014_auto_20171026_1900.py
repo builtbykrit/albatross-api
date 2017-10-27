@@ -16,7 +16,7 @@ def init_last_weeks_hours(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('projects', '0012_project_last_weeks_hours'),
+        ('projects', '0013_project_last_imported_date'),
     ]
 
     operations = [
