@@ -1,5 +1,7 @@
 import mock
 import unittest
+
+from decimal import Decimal
 from mock import MagicMock
 
 from datetime import timedelta
@@ -179,7 +181,7 @@ class WeeklyProgressCronJobTestCase(TestCase):
         project = Project.objects.get(name=self.PROJECT_NAME)
         hours = cronjob.get_project_weekly_hours(project)
 
-        self.assertEqual(hours[0], {timezone.now().strftime('%B %d'), 49})
+        self.assertEqual(hours[0], [Decimal(49), timezone.now().strftime('%B %d')])
         self.assertEqual(project.actual, project.last_weeks_hours)
 
     def test_get_projects_data(self):
@@ -192,26 +194,62 @@ class WeeklyProgressCronJobTestCase(TestCase):
         cronjob = WeeklyProgressCronJob()
         projects_data = cronjob.get_projects_data_for_user(user)
 
-        firstProjectIndex = 0 if projects_data[0]['name'] == self.PROJECT_NAME else 1
-        secondProjectIndex = 0 if firstProjectIndex == 1 else 1
+        first_project_index = 0 if projects_data[0]['name'] == self.PROJECT_NAME else 1
+        second_project_index = 0 if first_project_index == 1 else 1
 
-        self.assertEquals(projects_data[firstProjectIndex]['estimated'], 60)
-        self.assertEquals(projects_data[firstProjectIndex]['actual'], 49)
-        self.assertEquals(projects_data[firstProjectIndex]['hours_diff'], 11)
-        self.assertEquals(projects_data[firstProjectIndex]['name'], self.PROJECT_NAME)
-        self.assertEquals(projects_data[firstProjectIndex]['status'], cronjob.Status.UNDER)
-        self.assertEquals(projects_data[firstProjectIndex]['id'], Project.objects.get(name=self.PROJECT_NAME).id)
-        self.assertEquals(projects_data[firstProjectIndex]['items_under'], 1)
-        self.assertEquals(projects_data[firstProjectIndex]['items_close'], 1)
-        self.assertEquals(projects_data[firstProjectIndex]['items_over'], 1)
+        self.assertEquals(projects_data[first_project_index]['estimated'], 60)
+        self.assertEquals(projects_data[first_project_index]['actual'], 49)
+        self.assertEquals(projects_data[first_project_index]['hours_diff'], 11)
+        self.assertEquals(projects_data[first_project_index]['name'], self.PROJECT_NAME)
+        self.assertEquals(projects_data[first_project_index]['status'], cronjob.Status.UNDER)
+        self.assertEquals(projects_data[first_project_index]['id'], Project.objects.get(name=self.PROJECT_NAME).id)
+        self.assertEquals(projects_data[first_project_index]['items_under'], 1)
+        self.assertEquals(projects_data[first_project_index]['items_close'], 1)
+        self.assertEquals(projects_data[first_project_index]['items_over'], 1)
 
-        self.assertEquals(projects_data[secondProjectIndex]['estimated'], 25)
-        self.assertEquals(projects_data[secondProjectIndex]['actual'], 24)
-        self.assertEquals(projects_data[secondProjectIndex]['hours_diff'], 1)
-        self.assertEquals(projects_data[secondProjectIndex]['name'], 'Project')
-        self.assertEquals(projects_data[secondProjectIndex]['status'], cronjob.Status.CLOSE)
-        self.assertEquals(projects_data[secondProjectIndex]['id'], project.id)
-        self.assertEquals(projects_data[secondProjectIndex]['items_under'], 0)
-        self.assertEquals(projects_data[secondProjectIndex]['items_close'], 1)
-        self.assertEquals(projects_data[secondProjectIndex]['items_over'], 0)
+        self.assertEquals(projects_data[second_project_index]['estimated'], 25)
+        self.assertEquals(projects_data[second_project_index]['actual'], 24)
+        self.assertEquals(projects_data[second_project_index]['hours_diff'], 1)
+        self.assertEquals(projects_data[second_project_index]['name'], 'Project')
+        self.assertEquals(projects_data[second_project_index]['status'], cronjob.Status.CLOSE)
+        self.assertEquals(projects_data[second_project_index]['id'], project.id)
+        self.assertEquals(projects_data[second_project_index]['items_under'], 0)
+        self.assertEquals(projects_data[second_project_index]['items_close'], 1)
+        self.assertEquals(projects_data[second_project_index]['items_over'], 0)
+
+    def test_get_team_data(self):
+        user = User.objects.get(email='kehoffman3@gmail.com')
+        team = Team.objects.get(name='Kritters', creator=user)
+        project = Project.objects.create(name='Project', team=team)
+        category = Category.objects.create(name='Category', project=project)
+        item = Item.objects.create(description='Item', actual=24, estimated=25, category=category)
+
+        cronjob = WeeklyProgressCronJob()
+        projects_data = cronjob.get_projects_data_for_user(user)
+        team_previous_hours = cronjob.get_team_weekly_hours(projects_data)
+
+        self.assertEqual(team_previous_hours, [73])
+
+        Item.objects.create(description='New Item', actual=11, estimated=25, category=category)
+        item.actual = 35
+        item.save()
+
+        new_projects_data = cronjob.get_projects_data_for_user(user)
+        new_team_previous_hours = cronjob.get_team_weekly_hours(new_projects_data)
+
+        self.assertEqual(new_team_previous_hours, [22, 73])
+
+        project = Project.objects.create(name='Another Project', team=team)
+        new_category = Category.objects.create(name='Another Category', project=project)
+        Item.objects.create(description='Another Item', actual=3, estimated=30, category=new_category)
+
+        item.actual = 40
+        item.save()
+
+        Category.objects.create(name='New category', project=project)
+        Item.objects.create(description='Third Item', actual=3, estimated=25, category=category)
+
+        third_projects_data = cronjob.get_projects_data_for_user(user)
+        third_team_previous_hours = cronjob.get_team_weekly_hours(third_projects_data)
+        self.assertEqual(third_team_previous_hours, [11, 22, 73])
 

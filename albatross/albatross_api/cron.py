@@ -187,11 +187,23 @@ class WeeklyProgressCronJob(CronJobBase):
         if previous_weeks_hours is None:
             previous_weeks_hours = []
 
-        previous_weeks_hours.insert(0, {timezone.now().strftime('%B %d'), weekly_hours})
+        previous_weeks_hours.insert(0, [weekly_hours, timezone.now().strftime('%B %d')])
         project.previous_weeks_hours = previous_weeks_hours
         project.save()
 
         return previous_weeks_hours
+
+    @staticmethod
+    def get_team_weekly_hours(projects_data):
+        projects_previous_hours = []
+        for project_data in projects_data:
+            previous_weeks_hours = project_data['previous_weeks_hours']
+            project_hours = []
+            for hours in previous_weeks_hours:
+                project_hours.append(hours[0])
+            projects_previous_hours.append(project_hours)
+        return [sum(x) for x in itertools.zip_longest(*projects_previous_hours, fillvalue=0)]
+
 
     @transaction.atomic
     def get_projects_data_for_user(self, user):
@@ -250,11 +262,8 @@ class WeeklyProgressCronJob(CronJobBase):
         for user in users:
             projects_data = self.get_projects_data_for_user(user)
             user_first_name = user.first_name
-            projects_previous_hours = []
-            for project_data in projects_data:
-                projects_previous_hours = project_data['previous_weeks_hours']
-            team_previous_hours = [sum(x) for x in itertools.zip_longest(*projects_previous_hours, fillvalue=0)]
 
+            team_previous_hours = self.get_team_weekly_hours(projects_data)
             # If the team has not tracked any hours this week, dont send an email
             if team_previous_hours[0] == 0:
                 continue
