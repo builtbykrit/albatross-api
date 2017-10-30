@@ -208,7 +208,8 @@ class WeeklyProgressCronJob(CronJobBase):
     def get_projects_data_for_user(self, user):
         try:
             membership = Membership.objects.get(user=user)
-            projects = membership.team.projects.all()
+            #Only show active projects in the report
+            projects = membership.team.projects.filter(archived=False)
             projects_data = []
             for project in projects:
                 project_data = {}
