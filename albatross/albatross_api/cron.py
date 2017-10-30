@@ -1,19 +1,25 @@
-import mock
-
 from datetime import timedelta
+from datetime import date
+import itertools
+from authentication.models import UserProfile
+from decimal import Decimal
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.mail import EmailMultiAlternatives
-from django_cron import CronJobBase, Schedule
 from django.db.models import Q
 from django.utils import timezone
-from python_http_client.exceptions import BadRequestsError
-
-from authentication.models import UserProfile
-from harvest.utils import TokensManager
-from teams.models import Team, Membership
+from django_cron import CronJobBase, Schedule
 from harvest.hooks import hookset as harvest_hookset
+from harvest.utils import TokensManager
+from python_http_client.exceptions import BadRequestsError
+from teams.models import Team, Membership
 from toggl.hooks import hookset as toggl_hookset
+from django.db import transaction
+
+from enum import Enum
+
+UserModel = get_user_model()
 
 
 class RefreshHarvestTokensCronJob(CronJobBase):
@@ -121,7 +127,6 @@ class ImportHoursCronJob(CronJobBase):
             membership = Membership.objects.get(user=user)
             projects = membership.team.projects.all()
             for project in projects:
-                print(api_key)
                 project.update_actual(api_key, hookset)
         except Membership.DoesNotExist as e:
             pass
@@ -149,3 +154,116 @@ class ImportHoursCronJob(CronJobBase):
             api_key = user_profile.toggl_api_key
 
             self.update_projects(user_profile.user, api_key, toggl_hookset)
+
+
+class WeeklyProgressCronJob(CronJobBase):
+    RUN_AT_TIMES = ['06:00']
+    schedule = Schedule(run_at_times=RUN_AT_TIMES)
+
+    code = 'albatross_api.cron.WeeklyProgressCronJob'
+
+    class Status(Enum):
+        OVER = 1
+        CLOSE = 2
+        UNDER = 3
+
+    def get_status(self, estimated, actual):
+        hours_diff = estimated - actual
+        if hours_diff < 0:
+            return self.Status.OVER
+        elif hours_diff < estimated * Decimal(.1):
+            return self.Status.CLOSE
+        else:
+            return self.Status.UNDER
+
+    @staticmethod
+    def get_project_weekly_hours(project):
+        hours_diff = project.actual - project.last_weeks_hours
+        weekly_hours = hours_diff if hours_diff > 0 else 0
+        project.last_weeks_hours = project.actual
+
+        # Store last weeks hours into previous weeks hours
+        previous_weeks_hours = project.previous_weeks_hours
+        if previous_weeks_hours is None:
+            previous_weeks_hours = []
+
+        previous_weeks_hours.insert(0, [weekly_hours, timezone.now().strftime('%B %d')])
+        project.previous_weeks_hours = previous_weeks_hours
+        project.save()
+
+        return previous_weeks_hours
+
+    @staticmethod
+    def get_team_weekly_hours(projects_data):
+        projects_previous_hours = []
+        for project_data in projects_data:
+            previous_weeks_hours = project_data['previous_weeks_hours']
+            project_hours = []
+            for hours in previous_weeks_hours:
+                project_hours.append(hours[0])
+            projects_previous_hours.append(project_hours)
+        return [sum(x) for x in itertools.zip_longest(*projects_previous_hours, fillvalue=0)]
+
+
+    @transaction.atomic
+    def get_projects_data_for_user(self, user):
+        try:
+            membership = Membership.objects.get(user=user)
+            projects = membership.team.projects.all()
+            projects_data = []
+            for project in projects:
+                project_data = {}
+
+                project_data["previous_weeks_hours"] = self.get_project_weekly_hours(project)
+                project_data["name"] = project.name
+
+                estimated = project.estimated
+                actual = project.actual
+
+                project_data["estimated"] = estimated
+                project_data["actual"] = actual
+                project_data["hours_diff"] = estimated - actual
+                project_data["status"] = self.get_status(estimated=estimated, actual=actual)
+                project_data["id"] = project.id
+
+                items_under = 0
+                items_close = 0
+                items_over = 0
+                for category in project.categories.all():
+                    for item in category.items.all():
+                        item_status = self.get_status(estimated=item.estimated, actual=item.actual)
+                        if item_status is self.Status.UNDER:
+                            items_under += 1
+                        elif item_status is self.Status.CLOSE:
+                            items_close += 1
+                        else:
+                            items_over += 1
+
+                project_data["items_under"] = items_under
+                project_data["items_close"] = items_close
+                project_data["items_over"] = items_over
+
+                projects_data.append(project_data)
+
+            return projects_data
+        except Membership.DoesNotExist:
+            pass
+
+    def do(self):
+        # if date.today().weekday() != 0:
+        #    return
+        users = UserModel.objects.all()
+
+        report_start = date.today() - timedelta(days=7)
+        report_end = date.today()
+
+        date_range = '%s - %s' % (report_start.strftime('%B %d'), report_end.strftime('%B %d'))
+
+        for user in users:
+            projects_data = self.get_projects_data_for_user(user)
+            user_first_name = user.first_name
+
+            team_previous_hours = self.get_team_weekly_hours(projects_data)
+            # If the team has not tracked any hours this week, dont send an email
+            if team_previous_hours[0] == 0:
+                continue
