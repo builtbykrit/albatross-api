@@ -204,7 +204,6 @@ class WeeklyProgressCronJob(CronJobBase):
             projects_previous_hours.append(project_hours)
         return [sum(x) for x in itertools.zip_longest(*projects_previous_hours, fillvalue=0)]
 
-
     @transaction.atomic
     def get_projects_data_for_user(self, user):
         try:
@@ -248,6 +247,39 @@ class WeeklyProgressCronJob(CronJobBase):
             return projects_data
         except Membership.DoesNotExist:
             pass
+
+    def generate_html_for_projects(self, projects_data):
+        html = ""
+        for project_data in projects_data:
+            html += self.generate_html_for_project(project_data)
+            html += '<br/>'
+
+        return html
+
+    def generate_html_for_project(self, project_data):
+        
+
+    @staticmethod
+    def send_email(email, name, date, projects_html):
+        template_id = ""
+
+        mail = EmailMultiAlternatives(
+            subject="Weekly Report",
+            body="test",
+            from_email="Andrew Askins <andrew@builtbykrit.com>",
+            reply_to=["andrew@builtbykrit.com>"],
+            to=[email]
+        )
+        mail.substitutions = {'%name%': name, '%date': date, '%projects': projects_html}
+        mail.template_id = template_id
+
+        # So Sendgrid sends the html version of the template instead of text
+        mail.attach_alternative('test', "text/html")
+        try:
+            mail.send()
+        except BadRequestsError as e:
+            print(e.reason)
+            raise e
 
     def do(self):
         # if date.today().weekday() != 0:
