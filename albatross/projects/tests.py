@@ -289,6 +289,51 @@ class ProjectViewTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Project.objects.get(id=project.id).name, 'Albatross')
 
+    def test_archiving_project(self):
+        '''
+               PATCH /projects/:id
+               '''
+
+        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Kritters'))
+        data = {
+            'data': {
+                'id': project.id,
+                'attributes': {
+                    'archived': True
+                },
+                'type': 'projects'
+            }
+        }
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('project-detail', args=(project.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Project.objects.get(id=project.id).archived, True)
+
+    def test_unarchiving_project(self):
+        '''
+               PATCH /projects/:id
+               '''
+
+        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Kritters'))
+        project.archived = True
+        data = {
+            'data': {
+                'id': project.id,
+                'attributes': {
+                    'archived': False
+                },
+                'type': 'projects'
+            }
+        }
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('project-detail', args=(project.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Project.objects.get(id=project.id).archived, False)
+
     def test_change_project_buffer(self):
         '''
         PATCH /projects/:id

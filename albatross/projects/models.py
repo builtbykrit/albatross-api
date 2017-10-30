@@ -18,6 +18,7 @@ class CommonInfo(models.Model):
 
 
 class Project(CommonInfo):
+    archived = models.BooleanField(default=False)
     buffer = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     last_weeks_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     last_imported_date = models.DateTimeField(null=True, blank=True)
