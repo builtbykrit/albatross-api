@@ -36,8 +36,8 @@ class RefreshHarvestTokensCronJobTestCase(TestCase):
 
     @mock.patch('harvest.utils.TokensManager.refresh_access_token_by_demand')
     @mock.patch('harvest.utils.TokensManager.is_access_token_fresh')
-
-    def test_case_where_user_has_invalid_harvest_credentials(self, mock_refresh_access_token_by_demand, mock_is_access_token_fresh):
+    def test_case_where_user_has_invalid_harvest_credentials(self, mock_refresh_access_token_by_demand,
+                                                             mock_is_access_token_fresh):
         user = User.objects.create_user(
             email='user.2@example.com',
             first_name='Test',
@@ -65,6 +65,7 @@ class RefreshHarvestTokensCronJobTestCase(TestCase):
         self.assertEqual(user_profile.harvest_access_token, '')
         self.assertEqual(user_profile.harvest_refresh_token, '')
         self.assertEqual(user_profile.harvest_tokens_last_refreshed_at, None)
+
 
 class TrailExpirationCronJobTestCase(TestCase):
     ACCOUNT_CREDENTIALS = {
@@ -156,6 +157,7 @@ class ImportHoursCronJobTestCase(TestCase):
         cronjob = ImportHoursCronJob()
         cronjob.do()
 
+
 class WeeklyProgressCronJobTestCase(TestCase):
     CATEGORY_NAME = 'Frontend'
     PROJECT_NAME = 'My Project'
@@ -184,6 +186,23 @@ class WeeklyProgressCronJobTestCase(TestCase):
         self.assertEqual(hours[0], [Decimal(49), timezone.now().strftime('%B %d')])
         self.assertEqual(project.actual, project.last_weeks_hours)
 
+    def test_generate_html_for_projects(self):
+        user = User.objects.get(email='kehoffman3@gmail.com')
+        cronjob = WeeklyProgressCronJob()
+
+        projects_data = cronjob.get_projects_data_for_user(user)
+        html = cronjob.generate_html_for_projects(projects_data)
+
+        self.assertIn(self.PROJECT_NAME, html)
+        self.assertIn("<strong>49</strong>", html)
+        self.assertIn("<strong>60</strong>", html)
+        self.assertIn("status-bar green", html)
+        self.assertIn("hours status green", html)
+        self.assertIn("11 hours under", html)
+        self.assertIn("1 item over", html)
+        self.assertIn("1 item close", html)
+        self.assertIn("1 item under", html)
+
     def test_get_projects_data(self):
         user = User.objects.get(email='kehoffman3@gmail.com')
         team = Team.objects.get(name='Kritters', creator=user)
@@ -203,9 +222,9 @@ class WeeklyProgressCronJobTestCase(TestCase):
         self.assertEquals(projects_data[first_project_index]['name'], self.PROJECT_NAME)
         self.assertEquals(projects_data[first_project_index]['status'], cronjob.Status.UNDER)
         self.assertEquals(projects_data[first_project_index]['id'], Project.objects.get(name=self.PROJECT_NAME).id)
-        self.assertEquals(projects_data[first_project_index]['items_under'], 1)
-        self.assertEquals(projects_data[first_project_index]['items_close'], 1)
-        self.assertEquals(projects_data[first_project_index]['items_over'], 1)
+        self.assertEquals(projects_data[first_project_index]['items_under'], '1 item under')
+        self.assertEquals(projects_data[first_project_index]['items_close'], '1 item close')
+        self.assertEquals(projects_data[first_project_index]['items_over'], '1 item over')
 
         self.assertEquals(projects_data[second_project_index]['estimated'], 25)
         self.assertEquals(projects_data[second_project_index]['actual'], 24)
@@ -213,9 +232,9 @@ class WeeklyProgressCronJobTestCase(TestCase):
         self.assertEquals(projects_data[second_project_index]['name'], 'Project')
         self.assertEquals(projects_data[second_project_index]['status'], cronjob.Status.CLOSE)
         self.assertEquals(projects_data[second_project_index]['id'], project.id)
-        self.assertEquals(projects_data[second_project_index]['items_under'], 0)
-        self.assertEquals(projects_data[second_project_index]['items_close'], 1)
-        self.assertEquals(projects_data[second_project_index]['items_over'], 0)
+        self.assertEquals(projects_data[second_project_index]['items_under'], '0 items under')
+        self.assertEquals(projects_data[second_project_index]['items_close'], '1 item close')
+        self.assertEquals(projects_data[second_project_index]['items_over'], '0 items over')
 
     def test_get_team_data(self):
         user = User.objects.get(email='kehoffman3@gmail.com')
@@ -252,4 +271,3 @@ class WeeklyProgressCronJobTestCase(TestCase):
         third_projects_data = cronjob.get_projects_data_for_user(user)
         third_team_previous_hours = cronjob.get_team_weekly_hours(third_projects_data)
         self.assertEqual(third_team_previous_hours, [11, 22, 73])
-

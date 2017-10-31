@@ -1,12 +1,17 @@
-from datetime import timedelta
-from datetime import date
 import itertools
-from authentication.models import UserProfile
+import os
+from datetime import date
+from datetime import timedelta
 from decimal import Decimal
+from enum import Enum
+import re
+
+from authentication.models import UserProfile
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.mail import EmailMultiAlternatives
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from django_cron import CronJobBase, Schedule
@@ -15,9 +20,6 @@ from harvest.utils import TokensManager
 from python_http_client.exceptions import BadRequestsError
 from teams.models import Team, Membership
 from toggl.hooks import hookset as toggl_hookset
-from django.db import transaction
-
-from enum import Enum
 
 UserModel = get_user_model()
 
@@ -156,6 +158,9 @@ class ImportHoursCronJob(CronJobBase):
             self.update_projects(user_profile.user, api_key, toggl_hookset)
 
 
+def format_decimal(num):
+    return str(round(num, 2) if num% 1 else int(num))
+
 class WeeklyProgressCronJob(CronJobBase):
     RUN_AT_TIMES = ['06:00']
     schedule = Schedule(run_at_times=RUN_AT_TIMES)
@@ -208,7 +213,7 @@ class WeeklyProgressCronJob(CronJobBase):
     def get_projects_data_for_user(self, user):
         try:
             membership = Membership.objects.get(user=user)
-            #Only show active projects in the report
+            # Only show active projects in the report
             projects = membership.team.projects.filter(archived=False)
             projects_data = []
             for project in projects:
@@ -239,9 +244,9 @@ class WeeklyProgressCronJob(CronJobBase):
                         else:
                             items_over += 1
 
-                project_data["items_under"] = items_under
-                project_data["items_close"] = items_close
-                project_data["items_over"] = items_over
+                project_data["items_under"] = '{} item{} under'.format(items_under, '' if items_under == 1 else 's')
+                project_data["items_close"] = '{} item{} close'.format(items_close, '' if items_close == 1 else 's')
+                project_data["items_over"] = '{} item{} over'.format(items_over, '' if items_over == 1 else 's')
 
                 projects_data.append(project_data)
 
@@ -250,18 +255,52 @@ class WeeklyProgressCronJob(CronJobBase):
             pass
 
     def generate_html_for_projects(self, projects_data):
-        html = ""
+        projects_html = ""
+        with open(os.path.join(settings.BASE_DIR, 'albatross_api/emails/project.html')) as template_file:
+            template = template_file.read()
         for project_data in projects_data:
-            html += self.generate_html_for_project(project_data)
-            html += '<br/>'
+            actual = project_data["actual"]
+            formatted_actual = format_decimal(actual)
 
-        return html
+            estimated = project_data["estimated"]
+            formatted_estimated = format_decimal(estimated)
 
-    def generate_html_for_project(self, project_data):
-        
+            status = project_data["status"]
+            hours_diff = format_decimal(project_data["hours_diff"])
+
+            color = ""
+            status_text = ""
+
+            if status is self.Status.OVER:
+                color = "red"
+                status_text = "{} hours over".format(hours_diff)
+            elif status is self.Status.CLOSE:
+                color = "yellow"
+                status_text = "{} hours under".format(hours_diff)
+            elif status is self.Status.UNDER:
+                color = "green"
+                status_text = "{} hours under".format(hours_diff)
+
+            substitutions = {
+                '%name%': project_data['name'],
+                '%actual%': formatted_actual,
+                '%estimated%': formatted_estimated,
+                '%color%': color,
+                '%status': status_text,
+                '%items_under%': project_data['items_under'],
+                '%items_close%': project_data['items_close'],
+                'items_over%': project_data['items_over']
+
+            }
+            project_html = template
+            for i, j in substitutions.items():
+                project_html = project_html.replace(i, j)
+            projects_html += project_html
+
+        return projects_html
 
     @staticmethod
-    def send_email(email, name, date, projects_html):
+    def send_email(email, name, date, totalHours, history, projects):
         template_id = ""
 
         mail = EmailMultiAlternatives(
@@ -271,7 +310,11 @@ class WeeklyProgressCronJob(CronJobBase):
             reply_to=["andrew@builtbykrit.com>"],
             to=[email]
         )
-        mail.substitutions = {'%name%': name, '%date': date, '%projects': projects_html}
+        mail.substitutions = {'%name%': name,
+                              '%dateRange%': date,
+                              '%totalHours%': totalHours,
+                              '%history%': history,
+                              '%projects': projects}
         mail.template_id = template_id
 
         # So Sendgrid sends the html version of the template instead of text
