@@ -21,6 +21,8 @@ from python_http_client.exceptions import BadRequestsError
 from teams.models import Team, Membership
 from toggl.hooks import hookset as toggl_hookset
 
+from projects.models import Project
+
 UserModel = get_user_model()
 
 
@@ -183,7 +185,7 @@ class WeeklyProgressCronJob(CronJobBase):
             return self.Status.UNDER
 
     @staticmethod
-    def get_project_weekly_hours(project):
+    def update_project_weekly_hours(project):
         hours_diff = project.actual - project.last_weeks_hours
         weekly_hours = hours_diff if hours_diff > 0 else 0
         project.last_weeks_hours = project.actual
@@ -225,7 +227,7 @@ class WeeklyProgressCronJob(CronJobBase):
             for project in projects:
                 project_data = {}
 
-                project_data["previous_weeks_hours"] = self.get_project_weekly_hours(project)
+                project_data["previous_weeks_hours"] = project.previous_weeks_hours
                 project_data["name"] = project.name
 
                 estimated = project.estimated
@@ -265,6 +267,8 @@ class WeeklyProgressCronJob(CronJobBase):
         previous_hours = previous_weeks_hours[0][:4]
         previous_dates = previous_weeks_hours[1][:4]
 
+        if len(previous_hours) == 0:
+            return weekly_history_html
         max_hours = max(previous_hours)
         if max_hours == 0:
             return weekly_history_html
@@ -318,6 +322,7 @@ class WeeklyProgressCronJob(CronJobBase):
                 '%estimated%': formatted_estimated,
                 '%color%': color,
                 '%status%': status_text,
+                '%id%': str(project_data["id"]),
                 '%items_under%': project_data['items_under'],
                 '%items_close%': project_data['items_close'],
                 '%items_over%': project_data['items_over']
@@ -331,8 +336,8 @@ class WeeklyProgressCronJob(CronJobBase):
         return projects_html
 
     @staticmethod
-    def send_email(email, name, date, totalHours, history, projects):
-        template_id = ""
+    def send_email(email, name, date, total_hours, history, projects):
+        template_id = "3d0e1b4b-0f0b-472d-a338-5ce0f224868a"
 
         mail = EmailMultiAlternatives(
             subject="Weekly Report",
@@ -343,9 +348,9 @@ class WeeklyProgressCronJob(CronJobBase):
         )
         mail.substitutions = {'%name%': name,
                               '%dateRange%': date,
-                              '%totalHours%': totalHours,
+                              '%totalHours%': total_hours,
                               '%history%': history,
-                              '%projects': projects}
+                              '%projects%': projects}
         mail.template_id = template_id
 
         # So Sendgrid sends the html version of the template instead of text
@@ -353,8 +358,13 @@ class WeeklyProgressCronJob(CronJobBase):
         try:
             mail.send()
         except BadRequestsError as e:
-            print(e.reason)
+            print(e.body)
             raise e
+
+    def update_all_projects(self):
+        projects = Project.objects.all()
+        for project in projects:
+            self.update_project_weekly_hours(project)
 
     def do(self):
         # if date.today().weekday() != 0:
@@ -366,11 +376,20 @@ class WeeklyProgressCronJob(CronJobBase):
 
         date_range = '%s - %s' % (report_start.strftime('%B %d'), report_end.strftime('%B %d'))
 
+        self.update_all_projects()
         for user in users:
             projects_data = self.get_projects_data_for_user(user)
-            user_first_name = user.first_name
+            name = user.first_name
+            email = user.email
 
             team_previous_hours = self.get_team_weekly_hours(projects_data)
+            total_hours = team_previous_hours[0][0]
             # If the team has not tracked any hours this week, dont send an email
-            if team_previous_hours[0][0] == 0:
+            if total_hours == 0:
                 continue
+
+            history = self.generate_html_for_weekly_history(team_previous_hours)
+            projects_html = self.generate_html_for_projects(projects_data)
+
+            self.send_email(email=email, name=name, date=date_range, total_hours=total_hours, history=history,
+                            projects=projects_html)
