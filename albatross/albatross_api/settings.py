@@ -194,14 +194,13 @@ CORS_URLS_REGEX = r'^/api/.*$'
 # Django Email settings
 # https://github.com/elbuo8/sendgrid-django
 
-EMAIL_BACKEND = "sgbackend.SendGridBackend"
+EMAIL_BACKEND = 'sparkpost.django.email_backend.SparkPostEmailBackend'
 
-REPLY_TO_EMAIL_ADDRESS = "andrew@builtbykrit.com>"
+REPLY_TO_EMAIL_ADDRESS = "andrew@builtbykrit.co"
 
-SENDGRID_API_KEY = "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"
+SPARKPOST_API_KEY = 'API_KEY'
 
 SUPPORT_EMAIL_ADDRESS = "Albatross <support@email.getalbatross.com>"
-
 
 # Django REST Framework Settings
 

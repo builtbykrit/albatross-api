@@ -262,36 +262,30 @@ class WeeklyProgressCronJob(CronJobBase):
         except Membership.DoesNotExist:
             pass
 
-    def generate_html_for_weekly_history(self, previous_weeks_hours):
-        weekly_history_html = ""
+    def generate_weekly_history_substitutions(self, previous_weeks_hours):
+        weekly_history_substitutions = []
         previous_hours = previous_weeks_hours[0][:4]
         previous_dates = previous_weeks_hours[1][:4]
 
         if len(previous_hours) == 0:
-            return weekly_history_html
+            return weekly_history_substitutions
         max_hours = max(previous_hours)
         if max_hours == 0:
-            return weekly_history_html
-        with open(os.path.join(settings.BASE_DIR, 'albatross_api/emails/weekly_history.html')) as template_file:
-            template = template_file.read()
+            return weekly_history_substitutions
         for hours, date in itertools.zip_longest(previous_hours, previous_dates, fillvalue=None):
             height = "{0:.0f}%".format(hours / max_hours * 100)
             if date is None: date = previous_dates[0]
             substitutions = {
-                '%height%': height,
-                '%date%': date,
+                'height': height,
+                'date': date,
             }
-            week_html = template
-            for i, j in substitutions.items():
-                week_html = week_html.replace(i, j)
-            weekly_history_html += week_html
+            weekly_history_substitutions.append(substitutions)
 
-        return weekly_history_html
+        return weekly_history_substitutions
 
-    def generate_html_for_projects(self, projects_data):
-        projects_html = ""
-        with open(os.path.join(settings.BASE_DIR, 'albatross_api/emails/project.html')) as template_file:
-            template = template_file.read()
+    def generate_projects_substitutions(self, projects_data):
+        projects_substitutions = []
+
         for project_data in projects_data:
             actual = project_data["actual"]
             formatted_actual = format_decimal(actual)
@@ -303,58 +297,58 @@ class WeeklyProgressCronJob(CronJobBase):
             hours_diff = format_decimal(abs(project_data["hours_diff"]))
 
             color = ""
+            color_hex = ""
             status_text = ""
 
             pluralize_hours = int(hours_diff) != 1
             if status is self.Status.OVER:
                 color = "red"
+                color_hex = "#F46070"
                 status_text = "{} hour{} over".format(hours_diff, 's' if pluralize_hours else '')
             elif status is self.Status.CLOSE:
                 color = "yellow"
+                color_hex = "#FDD371"
                 status_text = "{} hour{} under".format(hours_diff, 's' if pluralize_hours else '')
             elif status is self.Status.UNDER:
                 color = "green"
+                color_hex = "#56D694"
                 status_text = "{} hour{} under".format(hours_diff, 's' if pluralize_hours else '')
 
             substitutions = {
-                '%name%': project_data['name'],
-                '%actual%': formatted_actual,
-                '%estimated%': formatted_estimated,
-                '%color%': color,
-                '%status%': status_text,
-                '%id%': str(project_data["id"]),
-                '%items_under%': project_data['items_under'],
-                '%items_close%': project_data['items_close'],
-                '%items_over%': project_data['items_over']
+                'name': project_data['name'],
+                'actual': formatted_actual,
+                'estimated': formatted_estimated,
+                'color': color,
+                'color_hex': color_hex,
+                'status': status_text,
+                'id': str(project_data["id"]),
+                'items_under': project_data['items_under'],
+                'items_close': project_data['items_close'],
+                'items_over': project_data['items_over']
 
             }
-            project_html = template
-            for i, j in substitutions.items():
-                project_html = project_html.replace(i, j)
-            projects_html += project_html
 
-        return projects_html
+            projects_substitutions.append(substitutions)
+
+        return projects_substitutions
 
     @staticmethod
     def send_email(email, name, date, total_hours, history, projects):
-        template_id = "3d0e1b4b-0f0b-472d-a338-5ce0f224868a"
+        template = "3d0e1b4b-0f0b-472d-a338-5ce0f224868a"
 
         mail = EmailMultiAlternatives(
             subject="Weekly Report",
-            body="test",
             from_email="Andrew Askins <andrew@builtbykrit.com>",
             reply_to=["andrew@builtbykrit.com>"],
             to=[email]
         )
-        mail.substitutions = {'%name%': name,
-                              '%dateRange%': date,
-                              '%totalHours%': total_hours,
-                              '%history%': history,
-                              '%projects%': projects}
-        mail.template_id = template_id
+        mail.substitution_data = {'name': name,
+                              'dateRange': date,
+                              'totalHours': total_hours,
+                              'history': history,
+                              'projects': projects}
+        mail.template = template
 
-        # So Sendgrid sends the html version of the template instead of text
-        mail.attach_alternative('test', "text/html")
         try:
             mail.send()
         except BadRequestsError as e:
@@ -388,8 +382,12 @@ class WeeklyProgressCronJob(CronJobBase):
             if total_hours == 0:
                 continue
 
-            history = self.generate_html_for_weekly_history(team_previous_hours)
-            projects_html = self.generate_html_for_projects(projects_data)
+            history = self.generate_weekly_history_substitutions(team_previous_hours)
+            projects_substitutions = self.generate_projects_substitutions(projects_data)
 
-            self.send_email(email=email, name=name, date=date_range, total_hours=total_hours, history=history,
-                            projects=projects_html)
+            self.send_email(email=email,
+                            name=name,
+                            date=date_range,
+                            total_hours=total_hours,
+                            history=history,
+                            projects=projects_substitutions)
