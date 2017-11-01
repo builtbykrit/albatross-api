@@ -159,7 +159,8 @@ class ImportHoursCronJob(CronJobBase):
 
 
 def format_decimal(num):
-    return str(round(num, 2) if num% 1 else int(num))
+    return str(round(num, 2) if num % 1 else int(num))
+
 
 class WeeklyProgressCronJob(CronJobBase):
     RUN_AT_TIMES = ['06:00']
@@ -201,13 +202,18 @@ class WeeklyProgressCronJob(CronJobBase):
     @staticmethod
     def get_team_weekly_hours(projects_data):
         projects_previous_hours = []
+        projects_previous_dates = []
+
         for project_data in projects_data:
             previous_weeks_hours = project_data['previous_weeks_hours']
             project_hours = []
             for hours in previous_weeks_hours:
                 project_hours.append(hours[0])
+                if hours[1] not in projects_previous_dates:
+                    projects_previous_dates.append(hours[1])
             projects_previous_hours.append(project_hours)
-        return [sum(x) for x in itertools.zip_longest(*projects_previous_hours, fillvalue=0)]
+
+        return [sum(x) for x in itertools.zip_longest(*projects_previous_hours, fillvalue=0)], projects_previous_dates
 
     @transaction.atomic
     def get_projects_data_for_user(self, user):
@@ -254,6 +260,30 @@ class WeeklyProgressCronJob(CronJobBase):
         except Membership.DoesNotExist:
             pass
 
+    def generate_html_for_weekly_history(self, previous_weeks_hours):
+        weekly_history_html = ""
+        previous_hours = previous_weeks_hours[0][:4]
+        previous_dates = previous_weeks_hours[1][:4]
+
+        max_hours = max(previous_hours)
+        if max_hours == 0:
+            return weekly_history_html
+        with open(os.path.join(settings.BASE_DIR, 'albatross_api/emails/weekly_history.html')) as template_file:
+            template = template_file.read()
+        for hours, date in itertools.zip_longest(previous_hours, previous_dates, fillvalue=None):
+            height = "{0:.0f}%".format(hours / max_hours * 100)
+            if date is None: date = previous_dates[0]
+            substitutions = {
+                '%height%': height,
+                '%date%': date,
+            }
+            week_html = template
+            for i, j in substitutions.items():
+                week_html = week_html.replace(i, j)
+            weekly_history_html += week_html
+
+        return weekly_history_html
+
     def generate_html_for_projects(self, projects_data):
         projects_html = ""
         with open(os.path.join(settings.BASE_DIR, 'albatross_api/emails/project.html')) as template_file:
@@ -271,25 +301,26 @@ class WeeklyProgressCronJob(CronJobBase):
             color = ""
             status_text = ""
 
+            pluralize_hours = int(hours_diff) != 1
             if status is self.Status.OVER:
                 color = "red"
-                status_text = "{} hours over".format(hours_diff)
+                status_text = "{} hour{} over".format(hours_diff, 's' if pluralize_hours else '')
             elif status is self.Status.CLOSE:
                 color = "yellow"
-                status_text = "{} hours under".format(hours_diff)
+                status_text = "{} hour{} under".format(hours_diff, 's' if pluralize_hours else '')
             elif status is self.Status.UNDER:
                 color = "green"
-                status_text = "{} hours under".format(hours_diff)
+                status_text = "{} hour{} under".format(hours_diff, 's' if pluralize_hours else '')
 
             substitutions = {
                 '%name%': project_data['name'],
                 '%actual%': formatted_actual,
                 '%estimated%': formatted_estimated,
                 '%color%': color,
-                '%status': status_text,
+                '%status%': status_text,
                 '%items_under%': project_data['items_under'],
                 '%items_close%': project_data['items_close'],
-                'items_over%': project_data['items_over']
+                '%items_over%': project_data['items_over']
 
             }
             project_html = template
@@ -341,5 +372,5 @@ class WeeklyProgressCronJob(CronJobBase):
 
             team_previous_hours = self.get_team_weekly_hours(projects_data)
             # If the team has not tracked any hours this week, dont send an email
-            if team_previous_hours[0] == 0:
+            if team_previous_hours[0][0] == 0:
                 continue

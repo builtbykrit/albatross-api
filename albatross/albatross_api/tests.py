@@ -188,6 +188,14 @@ class WeeklyProgressCronJobTestCase(TestCase):
 
     def test_generate_html_for_projects(self):
         user = User.objects.get(email='kehoffman3@gmail.com')
+        team = Team.objects.get(name='Kritters', creator=user)
+        project = Project.objects.create(name='Project', team=team, last_weeks_hours=6)
+        category = Category.objects.create(name='Category', project=project)
+        Item.objects.create(description='Item', actual=24, estimated=25, category=category)
+
+        over_project = Project.objects.create(name='Over Project', team=team)
+        over_category = Category.objects.create(name='New Category', project=over_project)
+        Item.objects.create(description='Testing', actual=36, estimated=29, category=over_category)
         cronjob = WeeklyProgressCronJob()
 
         projects_data = cronjob.get_projects_data_for_user(user)
@@ -199,9 +207,62 @@ class WeeklyProgressCronJobTestCase(TestCase):
         self.assertIn("status-bar green", html)
         self.assertIn("hours status green", html)
         self.assertIn("11 hours under", html)
-        self.assertIn("1 item over", html)
-        self.assertIn("1 item close", html)
-        self.assertIn("1 item under", html)
+        self.assertIn(">1 item over<", html)
+        self.assertIn(">1 item close<", html)
+        self.assertIn(">1 item under<", html)
+
+        # Test project that is close
+        self.assertIn("Project", html)
+        self.assertIn("<strong>25</strong>", html)
+        self.assertIn("<strong>24</strong>", html)
+        self.assertIn("status-bar yellow", html)
+        self.assertIn("hours status yellow", html)
+        self.assertIn("1 hour under", html)
+        self.assertIn(">0 items over<", html)
+        self.assertIn(">1 item close<", html)
+        self.assertIn(">0 items under<", html)
+
+        # Test project that is over
+        self.assertIn("Over Project", html)
+        self.assertIn("<strong>36</strong>", html)
+        self.assertIn("<strong>29</strong>", html)
+        self.assertIn("status-bar red", html)
+        self.assertIn("hours status red", html)
+        self.assertIn("7 hours over", html)
+        self.assertIn(">1 item over<", html)
+        self.assertIn(">0 items close<", html)
+        self.assertIn(">0 items under<", html)
+
+    def test_generate_weekly_html(self):
+        user = User.objects.get(email='kehoffman3@gmail.com')
+        category = Category.objects.get(name=self.CATEGORY_NAME)
+        cronjob = WeeklyProgressCronJob()
+
+        cronjob.get_projects_data_for_user(user=user)
+
+        item = Item.objects.create(description='New Item', actual=11, estimated=25, category=category)
+        item.save()
+
+        projects_data = cronjob.get_projects_data_for_user(user=user)
+
+        previous_hours = cronjob.get_team_weekly_hours(projects_data)
+        weekly_history_html = cronjob.generate_html_for_weekly_history(previous_hours)
+        self.assertIn("height:100%", weekly_history_html)
+        self.assertIn("height:22%", weekly_history_html)
+        self.assertIn(timezone.now().strftime('%B %d'), weekly_history_html)
+
+    def test_generate_weekly_html_empty(self):
+        user = User.objects.get(email='kehoffman3@gmail.com')
+        project = Project.objects.get(name=self.PROJECT_NAME)
+        project.last_weeks_hours = 49
+        project.save()
+
+        cronjob = WeeklyProgressCronJob()
+        projects_data = cronjob.get_projects_data_for_user(user=user)
+        previous_hours = cronjob.get_team_weekly_hours(projects_data)
+        weekly_history_html = cronjob.generate_html_for_weekly_history(previous_hours)
+        self.assertEqual(weekly_history_html, "")
+
 
     def test_get_projects_data(self):
         user = User.objects.get(email='kehoffman3@gmail.com')
@@ -247,7 +308,7 @@ class WeeklyProgressCronJobTestCase(TestCase):
         projects_data = cronjob.get_projects_data_for_user(user)
         team_previous_hours = cronjob.get_team_weekly_hours(projects_data)
 
-        self.assertEqual(team_previous_hours, [73])
+        self.assertEqual(team_previous_hours, ([73], [timezone.now().strftime('%B %d')]))
 
         Item.objects.create(description='New Item', actual=11, estimated=25, category=category)
         item.actual = 35
@@ -256,7 +317,7 @@ class WeeklyProgressCronJobTestCase(TestCase):
         new_projects_data = cronjob.get_projects_data_for_user(user)
         new_team_previous_hours = cronjob.get_team_weekly_hours(new_projects_data)
 
-        self.assertEqual(new_team_previous_hours, [22, 73])
+        self.assertEqual(new_team_previous_hours, ([22, 73], [timezone.now().strftime('%B %d')]))
 
         project = Project.objects.create(name='Another Project', team=team)
         new_category = Category.objects.create(name='Another Category', project=project)
@@ -270,4 +331,4 @@ class WeeklyProgressCronJobTestCase(TestCase):
 
         third_projects_data = cronjob.get_projects_data_for_user(user)
         third_team_previous_hours = cronjob.get_team_weekly_hours(third_projects_data)
-        self.assertEqual(third_team_previous_hours, [11, 22, 73])
+        self.assertEqual(third_team_previous_hours, ([11, 22, 73], [timezone.now().strftime('%B %d')]))
