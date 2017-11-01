@@ -195,7 +195,7 @@ class WeeklyProgressCronJob(CronJobBase):
         if previous_weeks_hours is None:
             previous_weeks_hours = []
 
-        previous_weeks_hours.insert(0, [weekly_hours, timezone.now().strftime('%B %d')])
+        previous_weeks_hours.insert(0, [weekly_hours, timezone.now().strftime('%b %d')])
         project.previous_weeks_hours = previous_weeks_hours
         project.save()
 
@@ -300,7 +300,7 @@ class WeeklyProgressCronJob(CronJobBase):
             formatted_estimated = format_decimal(estimated)
 
             status = project_data["status"]
-            hours_diff = format_decimal(project_data["hours_diff"])
+            hours_diff = format_decimal(abs(project_data["hours_diff"]))
 
             color = ""
             status_text = ""
@@ -383,7 +383,7 @@ class WeeklyProgressCronJob(CronJobBase):
             email = user.email
 
             team_previous_hours = self.get_team_weekly_hours(projects_data)
-            total_hours = team_previous_hours[0][0]
+            total_hours = format_decimal(team_previous_hours[0][0])
             # If the team has not tracked any hours this week, dont send an email
             if total_hours == 0:
                 continue
