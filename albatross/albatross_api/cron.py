@@ -58,10 +58,10 @@ class TrailExpirationCronJob(CronJobBase):
     @staticmethod
     def send_email(email, name, notification_type):
         if notification_type == 'almost_expired':
-            subject = "Your Free Trail is Almost Over - Upgrade Now"
+            subject = "Your Free Trial is Almost Over - Upgrade Now"
             template_id = "f34b927e-2fc3-4761-85b3-eeb319307cd0"
         if notification_type == 'expired':
-            subject = "Your Free Trail Just Expired - Upgrade Now"
+            subject = "Your Free Trial Just Expired - Upgrade Now"
             template_id = "2defda40-48e1-4247-b1b4-aaa265918cc5"
 
         mail = EmailMultiAlternatives(
