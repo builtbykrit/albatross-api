@@ -427,3 +427,33 @@ class UpdateUserProfileTestCase(APITestCase):
         assert 'id' in data
         assert 'toggl_api_key' in data['attributes']
         assert data['attributes']['toggl_api_key'] == toggl_api_key
+
+    def test_update_wants_weekly_emails_in_user_profile(self):
+        # Get user (so we have id)
+        user = self.get_user_profile()
+        user_id = user['data']['id']
+
+        # Update user profile
+        data = {
+            'data': {
+                'attributes': {
+                    'wants_weekly_emails': False
+                },
+                'id': user_id,
+                'type': 'profiles'
+            }
+        }
+        header = {'Accept': 'application/vnd.api+json'}
+        response = self.client.patch(path=reverse('users-profile',
+                                                  args=(user_id,)),
+                                     content_type='application/vnd.api+json',
+                                     data=json.dumps(data),
+                                     **header)
+        self.assertEqual(response.status_code, 200)
+        json_data = json.loads(response.content.decode('utf-8'))
+        assert 'data' in json_data
+        data = json_data['data']
+        assert 'attributes' in data
+        assert 'id' in data
+        assert 'wants_weekly_emails' in data['attributes']
+        assert not data['attributes']['wants_weekly_emails']
