@@ -186,7 +186,7 @@ class WeeklyProgressCronJobTestCase(TestCase):
         self.assertEqual(hours[0], [Decimal(49), timezone.now().strftime('%b %d')])
         self.assertEqual(project.actual, project.last_weeks_hours)
 
-    def test_generate_html_for_projects(self):
+    def test_generate_projects_substitutions(self):
         user = User.objects.get(email='kehoffman3@gmail.com')
         team = Team.objects.get(name='Kritters', creator=user)
         project = Project.objects.create(name='Project', team=team, last_weeks_hours=6)
@@ -200,42 +200,42 @@ class WeeklyProgressCronJobTestCase(TestCase):
         cronjob.update_all_projects()
 
         projects_data = cronjob.get_projects_data_for_user(user)
-        html = cronjob.generate_html_for_projects(projects_data)
+        substitutions = cronjob.generate_projects_substitutions(projects_data)
 
-        self.assertIn(self.PROJECT_NAME, html)
-        self.assertIn("<strong>49</strong>", html)
-        self.assertIn("<strong>60</strong>", html)
-        self.assertIn("status-bar green", html)
-        self.assertIn("hours status green", html)
-        self.assertIn("11 hours under", html)
-        self.assertIn(">1 item over<", html)
-        self.assertIn(">1 item close<", html)
-        self.assertIn(">1 item under<", html)
-        self.assertIn("https://app.getalbatross.com/projects/{}".format(project.id), html)
+        over_project_substitutions = substitutions[0]
+        self.assertEqual("Over Project", over_project_substitutions['name'])
+        self.assertEqual('29', over_project_substitutions['estimated'])
+        self.assertEqual('36', over_project_substitutions['actual'])
+        self.assertEqual('red', over_project_substitutions['color'])
+        self.assertEqual('#F46070', over_project_substitutions['color_hex'])
+        self.assertEqual(str(over_project.id), over_project_substitutions['id'])
+        self.assertEqual('0 items under', over_project_substitutions['items_under'])
+        self.assertEqual('1 item over', over_project_substitutions['items_over'])
+        self.assertEqual('0 items close', over_project_substitutions['items_close'])
 
-        # Test project that is close
-        self.assertIn("Project", html)
-        self.assertIn("<strong>25</strong>", html)
-        self.assertIn("<strong>24</strong>", html)
-        self.assertIn("status-bar yellow", html)
-        self.assertIn("hours status yellow", html)
-        self.assertIn("1 hour under", html)
-        self.assertIn(">0 items over<", html)
-        self.assertIn(">1 item close<", html)
-        self.assertIn(">0 items under<", html)
+        project_substitutions = substitutions[1]
+        self.assertEqual('Project', project_substitutions['name'])
+        self.assertEqual('25', project_substitutions['estimated'])
+        self.assertEqual('24', project_substitutions['actual'])
+        self.assertEqual('yellow', project_substitutions['color'])
+        self.assertEqual('#FDD371', project_substitutions['color_hex'])
+        self.assertEqual(str(project.id), project_substitutions['id'])
+        self.assertEqual('0 items under', project_substitutions['items_under'])
+        self.assertEqual('0 items over', project_substitutions['items_over'])
+        self.assertEqual('1 item close', project_substitutions['items_close'])
 
-        # Test project that is over
-        self.assertIn("Over Project", html)
-        self.assertIn("<strong>36</strong>", html)
-        self.assertIn("<strong>29</strong>", html)
-        self.assertIn("status-bar red", html)
-        self.assertIn("hours status red", html)
-        self.assertIn("7 hours over", html)
-        self.assertIn(">1 item over<", html)
-        self.assertIn(">0 items close<", html)
-        self.assertIn(">0 items under<", html)
+        my_project_substitutions = substitutions[2]
+        self.assertEqual(self.PROJECT_NAME, my_project_substitutions['name'])
+        self.assertEqual('60', my_project_substitutions['estimated'])
+        self.assertEqual('49', my_project_substitutions['actual'])
+        self.assertEqual('green', my_project_substitutions['color'])
+        self.assertEqual('#56D694', my_project_substitutions['color_hex'])
+        self.assertEqual('1', my_project_substitutions['id'])
+        self.assertEqual('1 item under', my_project_substitutions['items_under'])
+        self.assertEqual('1 item over', my_project_substitutions['items_over'])
+        self.assertEqual('1 item close', my_project_substitutions['items_close'])
 
-    def test_generate_weekly_html(self):
+    def test_generate_weekly_substitutions(self):
         user = User.objects.get(email='kehoffman3@gmail.com')
         category = Category.objects.get(name=self.CATEGORY_NAME)
         cronjob = WeeklyProgressCronJob()
@@ -257,7 +257,7 @@ class WeeklyProgressCronJobTestCase(TestCase):
         self.assertIn(timezone.now().strftime('%b %d'), weekly_history_html)
         self.assertIn("Dec 10", weekly_history_html)
 
-    def test_generate_weekly_html_empty(self):
+    def test_generate_weekly_substitutions_empty(self):
         user = User.objects.get(email='kehoffman3@gmail.com')
         project = Project.objects.get(name=self.PROJECT_NAME)
         project.last_weeks_hours = 49
@@ -267,8 +267,8 @@ class WeeklyProgressCronJobTestCase(TestCase):
         cronjob.update_all_projects()
         projects_data = cronjob.get_projects_data_for_user(user=user)
         previous_hours = cronjob.get_team_weekly_hours(projects_data)
-        weekly_history_html = cronjob.generate_html_for_weekly_history(previous_hours)
-        self.assertEqual(weekly_history_html, "")
+        weekly_history_substitutions = cronjob.generate_weekly_history_substitutions(previous_hours)
+        self.assertEqual(weekly_history_substitutions, [])
 
 
     def test_get_projects_data(self):

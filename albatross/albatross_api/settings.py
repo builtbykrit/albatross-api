@@ -198,7 +198,7 @@ EMAIL_BACKEND = 'sparkpost.django.email_backend.SparkPostEmailBackend'
 
 REPLY_TO_EMAIL_ADDRESS = "andrew@builtbykrit.co"
 
-SPARKPOST_API_KEY = 'API_KEY'
+SPARKPOST_API_KEY = 'd968b1eb4c0b6dd9266ab64eedcb472e3111fc73'
 
 SUPPORT_EMAIL_ADDRESS = "Albatross <support@email.getalbatross.com>"
 
