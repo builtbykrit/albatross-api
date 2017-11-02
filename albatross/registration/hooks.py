@@ -33,7 +33,6 @@ class RegistrationDefaultHookSet(object):
 
     @staticmethod
     def send_invitation_email(to, ctx):
-        # Using https://github.com/elbuo8/sendgrid-django
         signup_code = ctx["signup_code"]
         if signup_code.inviter:
             subject = "{} has invited to join an Albatross team".format(
@@ -47,10 +46,10 @@ class RegistrationDefaultHookSet(object):
             reply_to=[settings.REPLY_TO_EMAIL_ADDRESS],
             to=[to]
         )
-        mail.template_id = '3834a71f-bb2f-443a-869a-1f410fe645fa'
-        mail.substitutions = {'%link%': ctx["signup_url"]}
-        # So Sendgrid sends the html version of the template instead of text
-        mail.attach_alternative('test', "text/html")
+        #TODO: Update template_id
+        mail.template = '3834a71f-bb2f-443a-869a-1f410fe645fa'
+        mail.substitution_data = {'link': ctx["signup_url"]}
+
         try:
             mail.send()
         except BadRequestsError as e:

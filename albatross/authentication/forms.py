@@ -11,7 +11,7 @@ from urllib.parse import urlencode
 
 class PasswordResetFrom(RestAuthPasswordResetForm):
     def send_mail(self, context, to_email):
-        # Using https://github.com/elbuo8/sendgrid-django
+
         token = context["token"]
         uid = context["uid"]
         password_reset_url = None
@@ -26,10 +26,10 @@ class PasswordResetFrom(RestAuthPasswordResetForm):
             reply_to=[settings.REPLY_TO_EMAIL_ADDRESS],
             to=to_email
         )
-        mail.template_id = '4bf3e329-ff7d-43b8-817c-d5e4894f78db'
-        mail.substitutions = {'%link%': password_reset_url}
-        # So Sendgrid sends the html version of the template instead of text
-        mail.attach_alternative('test', "text/html")
+        # TODO: Update template id
+        mail.template = '4bf3e329-ff7d-43b8-817c-d5e4894f78db'
+        mail.substitution_data = {'link': password_reset_url}
+
         try:
             mail.send()
         except BadRequestsError as e:

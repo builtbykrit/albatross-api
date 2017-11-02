@@ -251,11 +251,14 @@ class WeeklyProgressCronJobTestCase(TestCase):
         previous_hours = cronjob.get_team_weekly_hours(projects_data)
         previous_hours[0].insert(1, 13)
         previous_hours[1].insert(1, 'Dec 10')
-        weekly_history_html = cronjob.generate_html_for_weekly_history(previous_hours)
-        self.assertIn("height:100%", weekly_history_html)
-        self.assertIn("height:27%", weekly_history_html)
-        self.assertIn(timezone.now().strftime('%b %d'), weekly_history_html)
-        self.assertIn("Dec 10", weekly_history_html)
+        substitutions = cronjob.generate_weekly_history_substitutions(previous_hours)
+        current_week_substitutions = substitutions[0]
+        self.assertEqual('100%', current_week_substitutions['height'])
+        self.assertEqual(timezone.now().strftime('%b %d'), current_week_substitutions['date'])
+
+        last_week_substitutions = substitutions[1]
+        self.assertEqual('27%', last_week_substitutions['height'])
+        self.assertEqual("Dec 10", last_week_substitutions['date'])
 
     def test_generate_weekly_substitutions_empty(self):
         user = User.objects.get(email='kehoffman3@gmail.com')
@@ -269,7 +272,6 @@ class WeeklyProgressCronJobTestCase(TestCase):
         previous_hours = cronjob.get_team_weekly_hours(projects_data)
         weekly_history_substitutions = cronjob.generate_weekly_history_substitutions(previous_hours)
         self.assertEqual(weekly_history_substitutions, [])
-
 
     def test_get_projects_data(self):
         user = User.objects.get(email='kehoffman3@gmail.com')

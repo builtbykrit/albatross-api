@@ -67,12 +67,14 @@ class TrailExpirationCronJob(CronJobBase):
 
     @staticmethod
     def send_email(email, name, notification_type):
+        # TODO update template ids
+        template = ""
         if notification_type == 'almost_expired':
             subject = "Your Free Trail is Almost Over - Upgrade Now"
-            template_id = "f34b927e-2fc3-4761-85b3-eeb319307cd0"
+            template = "f34b927e-2fc3-4761-85b3-eeb319307cd0"
         if notification_type == 'expired':
             subject = "Your Free Trail Just Expired - Upgrade Now"
-            template_id = "2defda40-48e1-4247-b1b4-aaa265918cc5"
+            template = "2defda40-48e1-4247-b1b4-aaa265918cc5"
 
         mail = EmailMultiAlternatives(
             subject=subject,
@@ -81,11 +83,9 @@ class TrailExpirationCronJob(CronJobBase):
             reply_to=["andrew@builtbykrit.com>"],
             to=[email]
         )
-        mail.substitutions = {'%name%': name}
-        mail.template_id = template_id
+        mail.substitution_data = {'name': name}
+        mail.template = template
 
-        # So Sendgrid sends the html version of the template instead of text
-        mail.attach_alternative('test', "text/html")
         try:
             mail.send()
         except BadRequestsError as e:
@@ -343,10 +343,10 @@ class WeeklyProgressCronJob(CronJobBase):
             to=[email]
         )
         mail.substitution_data = {'name': name,
-                              'dateRange': date,
-                              'totalHours': total_hours,
-                              'history': history,
-                              'projects': projects}
+                                  'dateRange': date,
+                                  'totalHours': total_hours,
+                                  'history': history,
+                                  'projects': projects}
         mail.template = template
 
         try:
@@ -361,6 +361,7 @@ class WeeklyProgressCronJob(CronJobBase):
             self.update_project_weekly_hours(project)
 
     def do(self):
+        #TODO: Uncomment before deploying
         # if date.today().weekday() != 0:
         #    return
         users = UserModel.objects.all()
