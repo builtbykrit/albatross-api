@@ -334,7 +334,7 @@ class WeeklyProgressCronJob(CronJobBase):
 
     @staticmethod
     def send_email(email, name, date, total_hours, history, projects):
-        template = "3d0e1b4b-0f0b-472d-a338-5ce0f224868a"
+        template = "weekly-report"
 
         mail = EmailMultiAlternatives(
             subject="Weekly Report",
@@ -343,8 +343,8 @@ class WeeklyProgressCronJob(CronJobBase):
             to=[email]
         )
         mail.substitution_data = {'name': name,
-                                  'dateRange': date,
-                                  'totalHours': total_hours,
+                                  'date_range': date,
+                                  'total_hours': total_hours,
                                   'history': history,
                                   'projects': projects}
         mail.template = template
@@ -361,7 +361,7 @@ class WeeklyProgressCronJob(CronJobBase):
             self.update_project_weekly_hours(project)
 
     def do(self):
-        #TODO: Uncomment before deploying
+        # TODO: Uncomment before deploying
         # if date.today().weekday() != 0:
         #    return
         users = UserModel.objects.all()
