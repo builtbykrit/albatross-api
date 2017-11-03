@@ -207,6 +207,8 @@ class WeeklyProgressCronJob(CronJobBase):
         projects_previous_dates = []
 
         for project_data in projects_data:
+            if 'previous_weeks_hours' not in project_data:
+                continue
             previous_weeks_hours = project_data['previous_weeks_hours']
             project_hours = []
             for hours in previous_weeks_hours:
@@ -221,8 +223,12 @@ class WeeklyProgressCronJob(CronJobBase):
     def get_projects_data_for_user(self, user):
         try:
             membership = Membership.objects.get(user=user)
-            # Only show active projects in the report
-            projects = membership.team.projects.filter(archived=False)
+
+            # Get all projects projects
+            projects = membership.team.projects.all()
+
+            # Removing archived projects may lead to negative numbers
+            # projects = membership.team.projects.filter(archived=False)
             projects_data = []
             for project in projects:
                 project_data = {}
@@ -259,8 +265,9 @@ class WeeklyProgressCronJob(CronJobBase):
                 projects_data.append(project_data)
 
             return projects_data
-        except Membership.DoesNotExist:
-            pass
+        except Exception as e:
+            print(e)
+            return []
 
     def generate_weekly_history_substitutions(self, previous_weeks_hours):
         weekly_history_substitutions = []
@@ -332,8 +339,11 @@ class WeeklyProgressCronJob(CronJobBase):
 
         return projects_substitutions
 
-    @staticmethod
-    def send_email(email, name, date, total_hours, history, projects):
+    def is_monday(self):
+        # TODO: Uncomment before deploying
+        return date.today().weekday() == 0
+
+    def send_email(self, email, name, date, total_hours, history, projects):
         template = "weekly-report"
 
         mail = EmailMultiAlternatives(
@@ -361,9 +371,8 @@ class WeeklyProgressCronJob(CronJobBase):
             self.update_project_weekly_hours(project)
 
     def do(self):
-        # TODO: Uncomment before deploying
-        # if date.today().weekday() != 0:
-        #    return
+        if not self.is_monday():
+            return
         users = UserModel.objects.all()
 
         report_start = date.today() - timedelta(days=7)
@@ -375,13 +384,18 @@ class WeeklyProgressCronJob(CronJobBase):
         for user in users:
             if not user.profile.wants_weekly_emails:
                 continue
+
             projects_data = self.get_projects_data_for_user(user)
             name = user.first_name
             email = user.email
 
             team_previous_hours = self.get_team_weekly_hours(projects_data)
+
+            if len(team_previous_hours[0]) == 0:
+                continue
+
             total_hours = format_decimal(team_previous_hours[0][0])
-            # If the team has not tracked any hours this week, dont send an email
+            # If the team has not tracked any hours this week, don't send an email
             if total_hours == 0:
                 continue
 

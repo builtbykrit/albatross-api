@@ -345,3 +345,29 @@ class WeeklyProgressCronJobTestCase(TestCase):
         third_projects_data = cronjob.get_projects_data_for_user(user)
         third_team_previous_hours = cronjob.get_team_weekly_hours(third_projects_data)
         self.assertEqual(third_team_previous_hours, ([11, 22, 73], [timezone.now().strftime('%b %d')]))
+
+
+    @mock.patch('albatross_api.cron.WeeklyProgressCronJob.send_email')
+    @mock.patch('albatross_api.cron.WeeklyProgressCronJob.is_monday')
+    def test_wants_weekly_emails_false(self, mock_is_monday, mock_send_email):
+        mock_is_monday.return_value = True
+        mock_send_email.return_value = True
+
+        user = User.objects.get(email='kehoffman3@gmail.com')
+        team = Team.objects.get(name='Kritters')
+        project = Project.objects.create(name='Project', team=team)
+        category = Category.objects.create(name='Category', project=project)
+        Item.objects.create(description='Item', actual=24, estimated=25, category=category)
+
+        profiles = UserProfile.objects.all()
+        for profile in profiles:
+            profile.wants_weekly_emails = False
+            profile.save()
+
+        cronjob = WeeklyProgressCronJob()
+        cronjob.do()
+
+        self.assertEqual(mock_send_email.call_count, 0)
+
+
+
