@@ -17,6 +17,7 @@ class UserProfile(models.Model):
     harvest_refresh_token = models.CharField(max_length=200, blank=True)
     harvest_tokens_last_refreshed_at = models.CharField(max_length=200, blank=True,
                                                             null=True)
+    wants_weekly_emails = models.BooleanField(default=True)
     toggl_api_key = models.CharField(max_length=200, blank=True)
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, related_name='profile',
