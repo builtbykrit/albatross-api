@@ -13,13 +13,14 @@ UserModel = get_user_model()
 
 
 class CategoryModelTestCase(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         user = UserModel.objects.create(
-            email='test@test.com',
+            email='test4@test.com',
             first_name='Tester',
             last_name='Account',
             password='password125',
-            username='test@test.com'
+            username='test4@test.com'
         )
 
         team = Team.objects.create(name='Krit', creator=user)
@@ -54,13 +55,14 @@ class CategoryModelTestCase(TestCase):
 
 
 class ProjectModelTestCases(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         user = UserModel.objects.create(
-            email='test@test.com',
+            email='test2@test.com',
             first_name='Tester',
             last_name='Account',
             password='password125',
-            username='test@test.com'
+            username='test2@test.com'
         )
 
         team = Team.objects.create(name='Krit', creator=user)
@@ -110,13 +112,14 @@ class ProjectModelTestCases(TestCase):
 
 
 class ProjectViewTests(APITestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         user = UserModel.objects.create(
-            email='test@test.com',
+            email='test3@test.com',
             first_name='Tester',
             last_name='Account',
             password='password125',
-            username='test@test.com'
+            username='test3@test.com'
         )
         Team.objects.create(name='Krit', creator=user)
         user = User.objects.create_user(
@@ -127,6 +130,9 @@ class ProjectViewTests(APITestCase):
             username='kehoffman3@gmail.com'
         )
         Team.objects.create(name='Kritters', creator=user)
+
+    def setUp(self):
+        user = User.objects.get(email='kehoffman3@gmail.com')
         self.client.force_authenticate(user=user)
 
     def test_unauthenticated_user_projects_response(self):
