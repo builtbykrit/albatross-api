@@ -49,7 +49,7 @@ def handle_charge_failed(sender, event, **kwargs):
              "bill@builtbykrit.com"]
     )
     mail.substitution_data = {'name': user.first_name}
-    mail.template = 'edc27fec-659c-4a8b-a105-0933dfccef8c'
+    mail.template = 'dunning'
     send_mail(mail)
 
 @receiver(WEBHOOK_SIGNALS['customer.subscription.deleted'])
@@ -67,7 +67,7 @@ def handle_subscription_deleted(sender, event, **kwargs):
         to=[user.email]
     )
     mail.substitution_data = {'name': user.first_name}
-    mail.template = 'ad89f0eb-d6a6-4b17-96d1-4d93ba84856f'
+    mail.template = 'subscription-expired'
     send_mail(mail)
 
 @receiver(subscription_made)
@@ -84,7 +84,7 @@ def handle_subscription_made(sender, plan, stripe_response, **kwargs):
         reply_to=[settings.REPLY_TO_EMAIL_ADDRESS],
         to=[sender.user.email]
     )
-    mail.template = '33f96b04-c373-417b-ac3d-1924808a11bb'
+    mail.template = 'upgrade'
     send_mail(mail)
 
 @receiver(webhook_processing_error)

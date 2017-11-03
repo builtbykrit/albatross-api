@@ -46,9 +46,9 @@ class RegistrationDefaultHookSet(object):
             reply_to=[settings.REPLY_TO_EMAIL_ADDRESS],
             to=[to]
         )
-        #TODO: Update template_id
-        mail.template = '3834a71f-bb2f-443a-869a-1f410fe645fa'
-        mail.substitution_data = {'link': ctx["signup_url"]}
+        mail.template = 'invite'
+        mail.substitution_data = {'link': ctx["signup_url"],
+                                  'subject': subject}
 
         try:
             mail.send()

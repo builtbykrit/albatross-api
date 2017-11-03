@@ -26,8 +26,7 @@ class PasswordResetFrom(RestAuthPasswordResetForm):
             reply_to=[settings.REPLY_TO_EMAIL_ADDRESS],
             to=to_email
         )
-        # TODO: Update template id
-        mail.template = '4bf3e329-ff7d-43b8-817c-d5e4894f78db'
+        mail.template = 'reset-password'
         mail.substitution_data = {'link': password_reset_url}
 
         try:

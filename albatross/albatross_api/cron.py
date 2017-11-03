@@ -67,14 +67,13 @@ class TrailExpirationCronJob(CronJobBase):
 
     @staticmethod
     def send_email(email, name, notification_type):
-        # TODO update template ids
         template = ""
         if notification_type == 'almost_expired':
-            subject = "Your Free Trail is Almost Over - Upgrade Now"
-            template = "f34b927e-2fc3-4761-85b3-eeb319307cd0"
+            subject = "Your Free Trial is Almost Over - Upgrade Now"
+            template = "trial-almost-expired"
         if notification_type == 'expired':
-            subject = "Your Free Trail Just Expired - Upgrade Now"
-            template = "2defda40-48e1-4247-b1b4-aaa265918cc5"
+            subject = "Your Free Trial Just Expired - Upgrade Now"
+            template = "trial-expired"
 
         mail = EmailMultiAlternatives(
             subject=subject,
@@ -83,7 +82,8 @@ class TrailExpirationCronJob(CronJobBase):
             reply_to=["andrew@builtbykrit.com>"],
             to=[email]
         )
-        mail.substitution_data = {'name': name}
+        mail.substitution_data = {'name': name,
+                                  'subject': subject}
         mail.template = template
 
         try:
