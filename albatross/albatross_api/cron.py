@@ -373,6 +373,8 @@ class WeeklyProgressCronJob(CronJobBase):
 
         self.update_all_projects()
         for user in users:
+            if not user.profile.wants_weekly_emails:
+                continue
             projects_data = self.get_projects_data_for_user(user)
             name = user.first_name
             email = user.email
