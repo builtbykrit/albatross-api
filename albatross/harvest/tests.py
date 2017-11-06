@@ -1,4 +1,7 @@
+from datetime import timedelta
 from decimal import Decimal
+from django.utils import timezone
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from projects.models import Category, Item, Project
@@ -93,3 +96,5 @@ class HarvestTestCase(TestCase):
 
         updated_project = Project.objects.get(id=self.project.id)
         assert updated_project.actual > Decimal(19.5) # design is only thing in harvest
+
+        assert (updated_project.last_imported_date - timezone.now() < timedelta(seconds=15))

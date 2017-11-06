@@ -1,19 +1,29 @@
-import mock
-
+import itertools
+import os
+from datetime import date
 from datetime import timedelta
-from django.conf import settings
-from django.core.cache import cache
-from django.core.mail import EmailMultiAlternatives
-from django_cron import CronJobBase, Schedule
-from django.db.models import Q
-from django.utils import timezone
-from python_http_client.exceptions import BadRequestsError
+from decimal import Decimal
+from enum import Enum
+import re
 
 from authentication.models import UserProfile
-from harvest.utils import TokensManager
-from teams.models import Team, Membership
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.core.mail import EmailMultiAlternatives
+from django.db import transaction
+from django.db.models import Q
+from django.utils import timezone
+from django_cron import CronJobBase, Schedule
 from harvest.hooks import hookset as harvest_hookset
+from harvest.utils import TokensManager
+from python_http_client.exceptions import BadRequestsError
+from teams.models import Team, Membership
 from toggl.hooks import hookset as toggl_hookset
+
+from projects.models import Project
+
+UserModel = get_user_model()
 
 
 class RefreshHarvestTokensCronJob(CronJobBase):
@@ -57,12 +67,13 @@ class TrailExpirationCronJob(CronJobBase):
 
     @staticmethod
     def send_email(email, name, notification_type):
+        template = ""
         if notification_type == 'almost_expired':
             subject = "Your Free Trial is Almost Over - Upgrade Now"
-            template_id = "f34b927e-2fc3-4761-85b3-eeb319307cd0"
+            template = "trial-almost-expired"
         if notification_type == 'expired':
             subject = "Your Free Trial Just Expired - Upgrade Now"
-            template_id = "2defda40-48e1-4247-b1b4-aaa265918cc5"
+            template = "trial-expired"
 
         mail = EmailMultiAlternatives(
             subject=subject,
@@ -71,11 +82,10 @@ class TrailExpirationCronJob(CronJobBase):
             reply_to=["andrew@builtbykrit.com>"],
             to=[email]
         )
-        mail.substitutions = {'%name%': name}
-        mail.template_id = template_id
+        mail.substitution_data = {'name': name,
+                                  'subject': subject}
+        mail.template = template
 
-        # So Sendgrid sends the html version of the template instead of text
-        mail.attach_alternative('test', "text/html")
         try:
             mail.send()
         except BadRequestsError as e:
@@ -121,7 +131,6 @@ class ImportHoursCronJob(CronJobBase):
             membership = Membership.objects.get(user=user)
             projects = membership.team.projects.all()
             for project in projects:
-                print(api_key)
                 project.update_actual(api_key, hookset)
         except Membership.DoesNotExist as e:
             pass
@@ -149,3 +158,253 @@ class ImportHoursCronJob(CronJobBase):
             api_key = user_profile.toggl_api_key
 
             self.update_projects(user_profile.user, api_key, toggl_hookset)
+
+
+def format_decimal(num):
+    return str(round(num, 2) if num % 1 else int(num))
+
+
+class WeeklyProgressCronJob(CronJobBase):
+    RUN_AT_TIMES = ['06:00']
+    schedule = Schedule(run_at_times=RUN_AT_TIMES)
+
+    code = 'albatross_api.cron.WeeklyProgressCronJob'
+
+    class Status(Enum):
+        OVER = 1
+        CLOSE = 2
+        UNDER = 3
+
+    def get_status(self, estimated, actual):
+        hours_diff = estimated - actual
+        if hours_diff < 0:
+            return self.Status.OVER
+        elif hours_diff < estimated * Decimal(.1):
+            return self.Status.CLOSE
+        else:
+            return self.Status.UNDER
+
+    @staticmethod
+    def update_project_weekly_hours(project):
+        hours_diff = project.actual - project.last_weeks_hours
+        weekly_hours = hours_diff if hours_diff > 0 else 0
+        project.last_weeks_hours = project.actual
+
+        # Store last weeks hours into previous weeks hours
+        previous_weeks_hours = project.previous_weeks_hours
+        if previous_weeks_hours is None:
+            previous_weeks_hours = []
+
+        previous_weeks_hours.insert(0, [weekly_hours, timezone.now().strftime('%b %d')])
+        project.previous_weeks_hours = previous_weeks_hours
+        project.save()
+
+        return previous_weeks_hours
+
+    @staticmethod
+    def get_team_weekly_hours(projects_data):
+        projects_previous_hours = []
+        projects_previous_dates = []
+
+        for project_data in projects_data:
+            if 'previous_weeks_hours' not in project_data:
+                continue
+            previous_weeks_hours = project_data['previous_weeks_hours']
+            project_hours = []
+            for hours in previous_weeks_hours:
+                project_hours.append(hours[0])
+                if hours[1] not in projects_previous_dates:
+                    projects_previous_dates.append(hours[1])
+            projects_previous_hours.append(project_hours)
+
+        return [sum(x) for x in itertools.zip_longest(*projects_previous_hours, fillvalue=0)], projects_previous_dates
+
+    @transaction.atomic
+    def get_projects_data_for_user(self, user):
+        try:
+            membership = Membership.objects.get(user=user)
+
+            # Get all projects projects
+            projects = membership.team.projects.all()
+
+            # Removing archived projects may lead to negative numbers
+            # projects = membership.team.projects.filter(archived=False)
+            projects_data = []
+            for project in projects:
+                project_data = {}
+
+                project_data["previous_weeks_hours"] = project.previous_weeks_hours
+                project_data["name"] = project.name
+
+                estimated = project.estimated
+                actual = project.actual
+
+                project_data["estimated"] = estimated
+                project_data["actual"] = actual
+                project_data["hours_diff"] = estimated - actual
+                project_data["status"] = self.get_status(estimated=estimated, actual=actual)
+                project_data["id"] = project.id
+
+                items_under = 0
+                items_close = 0
+                items_over = 0
+                for category in project.categories.all():
+                    for item in category.items.all():
+                        item_status = self.get_status(estimated=item.estimated, actual=item.actual)
+                        if item_status is self.Status.UNDER:
+                            items_under += 1
+                        elif item_status is self.Status.CLOSE:
+                            items_close += 1
+                        else:
+                            items_over += 1
+
+                project_data["items_under"] = '{} item{} under'.format(items_under, '' if items_under == 1 else 's')
+                project_data["items_close"] = '{} item{} close'.format(items_close, '' if items_close == 1 else 's')
+                project_data["items_over"] = '{} item{} over'.format(items_over, '' if items_over == 1 else 's')
+
+                projects_data.append(project_data)
+
+            return projects_data
+        except Exception as e:
+            print(e)
+            return []
+
+    def generate_weekly_history_substitutions(self, previous_weeks_hours):
+        length = 4 if len(previous_weeks_hours[1]) > 4 else len(previous_weeks_hours[1])
+        weekly_history_substitutions = []
+        previous_hours = previous_weeks_hours[0][:length]
+        previous_dates = previous_weeks_hours[1][:length]
+
+        if len(previous_hours) == 0:
+            return weekly_history_substitutions
+        max_hours = max(previous_hours)
+        if max_hours == 0:
+            return weekly_history_substitutions
+        for hours, date in itertools.zip_longest(previous_hours, previous_dates, fillvalue=None):
+            height = "{0:.0f}%".format(hours / max_hours * 100)
+            if date is None: continue
+            substitutions = {
+                'height': height,
+                'date': date,
+            }
+            weekly_history_substitutions.append(substitutions)
+
+        return weekly_history_substitutions
+
+    def generate_projects_substitutions(self, projects_data):
+        projects_substitutions = []
+
+        for project_data in projects_data:
+            actual = project_data["actual"]
+            formatted_actual = format_decimal(actual)
+
+            estimated = project_data["estimated"]
+            formatted_estimated = format_decimal(estimated)
+
+            status = project_data["status"]
+            hours_diff = format_decimal(abs(project_data["hours_diff"]))
+
+            color = ""
+            color_hex = ""
+            status_text = ""
+
+            pluralize_hours = int(hours_diff) != 1
+            if status is self.Status.OVER:
+                color = "red"
+                color_hex = "#F46070"
+                status_text = "{} hour{} over".format(hours_diff, 's' if pluralize_hours else '')
+            elif status is self.Status.CLOSE:
+                color = "yellow"
+                color_hex = "#FDD371"
+                status_text = "{} hour{} under".format(hours_diff, 's' if pluralize_hours else '')
+            elif status is self.Status.UNDER:
+                color = "green"
+                color_hex = "#56D694"
+                status_text = "{} hour{} under".format(hours_diff, 's' if pluralize_hours else '')
+
+            substitutions = {
+                'name': project_data['name'],
+                'actual': formatted_actual,
+                'estimated': formatted_estimated,
+                'color': color,
+                'color_hex': color_hex,
+                'status': status_text,
+                'id': str(project_data["id"]),
+                'items_under': project_data['items_under'],
+                'items_close': project_data['items_close'],
+                'items_over': project_data['items_over']
+
+            }
+
+            projects_substitutions.append(substitutions)
+
+        return projects_substitutions
+
+    def is_monday(self):
+        return date.today().weekday() == 0
+
+    def send_email(self, email, name, date, total_hours, history, projects):
+        template = "weekly-report"
+
+        mail = EmailMultiAlternatives(
+            subject="Weekly Report",
+            from_email="Andrew Askins <andrew@builtbykrit.com>",
+            reply_to=["andrew@builtbykrit.com>"],
+            to=[email]
+        )
+        mail.substitution_data = {'name': name,
+                                  'date_range': date,
+                                  'total_hours': total_hours,
+                                  'history': history,
+                                  'projects': projects}
+        mail.template = template
+
+        try:
+            mail.send()
+        except BadRequestsError as e:
+            print(e.body)
+            raise e
+
+    def update_all_projects(self):
+        projects = Project.objects.all()
+        for project in projects:
+            self.update_project_weekly_hours(project)
+
+    def do(self):
+        if not self.is_monday():
+            return
+        users = UserModel.objects.all()
+
+        report_start = date.today() - timedelta(days=7)
+        report_end = date.today()
+
+        date_range = '%s - %s' % (report_start.strftime('%B %d'), report_end.strftime('%B %d'))
+
+        self.update_all_projects()
+        for user in users:
+            if not user.profile.wants_weekly_emails:
+                continue
+
+            projects_data = self.get_projects_data_for_user(user)
+            name = user.first_name
+            email = user.email
+
+            team_previous_hours = self.get_team_weekly_hours(projects_data)
+
+            if len(team_previous_hours[0]) == 0:
+                continue
+
+            # If the team has not tracked any hours this week, don't send an email
+            if team_previous_hours[0][0] == 0:
+                continue
+            total_hours = format_decimal(team_previous_hours[0][0])
+
+            history = self.generate_weekly_history_substitutions(team_previous_hours)
+            projects_substitutions = self.generate_projects_substitutions(projects_data)
+
+            self.send_email(email=email,
+                            name=name,
+                            date=date_range,
+                            total_hours=total_hours,
+                            history=history,
+                            projects=projects_substitutions)

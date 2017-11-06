@@ -5,13 +5,26 @@ from rest_framework.test import APITestCase, APIClient
 from django.urls import reverse
 import json
 
+from django.contrib.auth import get_user_model
 from .models import Project, Category, Item
 from teams.models import Team
 
+UserModel = get_user_model()
+
 
 class CategoryModelTestCase(TestCase):
-    def setUp(self):
-        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Krit'))
+    @classmethod
+    def setUpTestData(cls):
+        user = UserModel.objects.create(
+            email='test4@test.com',
+            first_name='Tester',
+            last_name='Account',
+            password='password125',
+            username='test4@test.com'
+        )
+
+        team = Team.objects.create(name='Krit', creator=user)
+        project = Project.objects.create(name='My Project', team=team)
         Category.objects.create(name='Backend', project=project)
 
     def test_no_item(self):
@@ -42,8 +55,18 @@ class CategoryModelTestCase(TestCase):
 
 
 class ProjectModelTestCases(TestCase):
-    def setUp(self):
-        Project.objects.create(name='My Project', team=Team.objects.get(name='Krit'))
+    @classmethod
+    def setUpTestData(cls):
+        user = UserModel.objects.create(
+            email='test2@test.com',
+            first_name='Tester',
+            last_name='Account',
+            password='password125',
+            username='test2@test.com'
+        )
+
+        team = Team.objects.create(name='Krit', creator=user)
+        Project.objects.create(name='My Project', team=team)
 
     def test_no_categories(self):
         """
@@ -89,7 +112,16 @@ class ProjectModelTestCases(TestCase):
 
 
 class ProjectViewTests(APITestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
+        user = UserModel.objects.create(
+            email='test3@test.com',
+            first_name='Tester',
+            last_name='Account',
+            password='password125',
+            username='test3@test.com'
+        )
+        Team.objects.create(name='Krit', creator=user)
         user = User.objects.create_user(
             email='kehoffman3@gmail.com',
             first_name='Test',
@@ -98,6 +130,9 @@ class ProjectViewTests(APITestCase):
             username='kehoffman3@gmail.com'
         )
         Team.objects.create(name='Kritters', creator=user)
+
+    def setUp(self):
+        user = User.objects.get(email='kehoffman3@gmail.com')
         self.client.force_authenticate(user=user)
 
     def test_unauthenticated_user_projects_response(self):
@@ -259,6 +294,51 @@ class ProjectViewTests(APITestCase):
                                      )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Project.objects.get(id=project.id).name, 'Albatross')
+
+    def test_archiving_project(self):
+        '''
+               PATCH /projects/:id
+               '''
+
+        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Kritters'))
+        data = {
+            'data': {
+                'id': project.id,
+                'attributes': {
+                    'archived': True
+                },
+                'type': 'projects'
+            }
+        }
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('project-detail', args=(project.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Project.objects.get(id=project.id).archived, True)
+
+    def test_unarchiving_project(self):
+        '''
+               PATCH /projects/:id
+               '''
+
+        project = Project.objects.create(name='My Project', team=Team.objects.get(name='Kritters'))
+        project.archived = True
+        data = {
+            'data': {
+                'id': project.id,
+                'attributes': {
+                    'archived': False
+                },
+                'type': 'projects'
+            }
+        }
+        response = self.client.patch(data=json.dumps(data),
+                                     path=reverse('project-detail', args=(project.id,)),
+                                     content_type='application/vnd.api+json'
+                                     )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Project.objects.get(id=project.id).archived, False)
 
     def test_change_project_buffer(self):
         '''

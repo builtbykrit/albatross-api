@@ -194,14 +194,13 @@ CORS_URLS_REGEX = r'^/api/.*$'
 # Django Email settings
 # https://github.com/elbuo8/sendgrid-django
 
-EMAIL_BACKEND = "sgbackend.SendGridBackend"
+EMAIL_BACKEND = 'sparkpost.django.email_backend.SparkPostEmailBackend'
 
-REPLY_TO_EMAIL_ADDRESS = "andrew@builtbykrit.com>"
+REPLY_TO_EMAIL_ADDRESS = "andrew@builtbykrit.co"
 
-SENDGRID_API_KEY = "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"
+SPARKPOST_API_KEY = 'd968b1eb4c0b6dd9266ab64eedcb472e3111fc73'
 
 SUPPORT_EMAIL_ADDRESS = "Albatross <support@email.getalbatross.com>"
-
 
 # Django REST Framework Settings
 
@@ -316,7 +315,8 @@ STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "sk_test_t6EpW0A1s2vSRUm
 CRON_CLASSES = [
     "albatross_api.cron.RefreshHarvestTokensCronJob",
     "albatross_api.cron.TrailExpirationCronJob",
-    "albatross_api.cron.ImportHoursCronJob"
+    "albatross_api.cron.ImportHoursCronJob",
+    "albatross_api.cron.WeeklyProgressCronJob"
 ]
 
 
