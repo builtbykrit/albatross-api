@@ -270,9 +270,10 @@ class WeeklyProgressCronJob(CronJobBase):
             return []
 
     def generate_weekly_history_substitutions(self, previous_weeks_hours):
+        length = 4 if len(previous_weeks_hours[1]) > 4 else len(previous_weeks_hours[1])
         weekly_history_substitutions = []
-        previous_hours = previous_weeks_hours[0][:4]
-        previous_dates = previous_weeks_hours[1][:4]
+        previous_hours = previous_weeks_hours[0][:length]
+        previous_dates = previous_weeks_hours[1][:length]
 
         if len(previous_hours) == 0:
             return weekly_history_substitutions
@@ -281,7 +282,7 @@ class WeeklyProgressCronJob(CronJobBase):
             return weekly_history_substitutions
         for hours, date in itertools.zip_longest(previous_hours, previous_dates, fillvalue=None):
             height = "{0:.0f}%".format(hours / max_hours * 100)
-            if date is None: date = previous_dates[0]
+            if date is None: continue
             substitutions = {
                 'height': height,
                 'date': date,
@@ -340,7 +341,6 @@ class WeeklyProgressCronJob(CronJobBase):
         return projects_substitutions
 
     def is_monday(self):
-        # TODO: Uncomment before deploying
         return date.today().weekday() == 0
 
     def send_email(self, email, name, date, total_hours, history, projects):
@@ -394,10 +394,10 @@ class WeeklyProgressCronJob(CronJobBase):
             if len(team_previous_hours[0]) == 0:
                 continue
 
-            total_hours = format_decimal(team_previous_hours[0][0])
             # If the team has not tracked any hours this week, don't send an email
-            if total_hours == 0:
+            if team_previous_hours[0][0] == 0:
                 continue
+            total_hours = format_decimal(team_previous_hours[0][0])
 
             history = self.generate_weekly_history_substitutions(team_previous_hours)
             projects_substitutions = self.generate_projects_substitutions(projects_data)
