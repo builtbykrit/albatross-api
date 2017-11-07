@@ -157,7 +157,7 @@ class Team(BaseTeam):
                                 related_name="teams_created",
                                 verbose_name="creator")
     name = models.CharField(max_length=100, verbose_name="name")
-    on_trial = models.BooleanField(default=True)
+    on_trial = models.BooleanField(default=False)
     trial_expires_at = models.DateTimeField(default=fourteen_days_ahead)
 
     class Meta:
