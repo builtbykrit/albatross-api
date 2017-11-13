@@ -10,6 +10,7 @@ from authentication.models import UserProfile
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.db.models import Q
@@ -382,10 +383,11 @@ class WeeklyProgressCronJob(CronJobBase):
 
         self.update_all_projects()
         for user in users:
-            # Check if user has a profile
-            if not user.profile:
-                continue
-            if not user.profile.wants_weekly_emails:
+            # Check if user has a profile and wants weekly emails
+            try:
+                if not user.profile.wants_weekly_emails:
+                    continue
+            except ObjectDoesNotExist:
                 continue
 
             projects_data = self.get_projects_data_for_user(user)
