@@ -167,7 +167,10 @@ def format_decimal(num):
 
 class WeeklyProgressCronJob(CronJobBase):
     RUN_AT_TIMES = ['06:00']
-    schedule = Schedule(run_at_times=RUN_AT_TIMES)
+    # Prevent job being rerun after a failure: https://github.com/Tivix/django-cron/issues/115
+    RETRY_AFTER_FAILURE_MINS = 864000000
+
+    schedule = Schedule(run_at_times=RUN_AT_TIMES, retry_after_failure_mins=RETRY_AFTER_FAILURE_MINS)
 
     code = 'albatross_api.cron.WeeklyProgressCronJob'
 
