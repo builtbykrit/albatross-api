@@ -312,7 +312,7 @@ class WeeklyProgressCronJob(CronJobBase):
             color_hex = ""
             status_text = ""
 
-            pluralize_hours = int(hours_diff) != 1
+            pluralize_hours = hours_diff != 1
             if status is self.Status.OVER:
                 color = "red"
                 color_hex = "#F46070"
