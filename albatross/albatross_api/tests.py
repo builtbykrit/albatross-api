@@ -213,7 +213,6 @@ class WeeklyProgressCronJobTestCase(TestCase):
         self.assertEqual('36', over_project_substitutions['actual'])
         self.assertEqual('red', over_project_substitutions['color'])
         self.assertEqual('#F46070', over_project_substitutions['color_hex'])
-        self.assertEqual(str(over_project.id), over_project_substitutions['id'])
         self.assertEqual('0 items under', over_project_substitutions['items_under'])
         self.assertEqual('1 item over', over_project_substitutions['items_over'])
         self.assertEqual('0 items close', over_project_substitutions['items_close'])
@@ -224,7 +223,6 @@ class WeeklyProgressCronJobTestCase(TestCase):
         self.assertEqual('24', project_substitutions['actual'])
         self.assertEqual('yellow', project_substitutions['color'])
         self.assertEqual('#FDD371', project_substitutions['color_hex'])
-        self.assertEqual(str(project.id), project_substitutions['id'])
         self.assertEqual('0 items under', project_substitutions['items_under'])
         self.assertEqual('0 items over', project_substitutions['items_over'])
         self.assertEqual('1 item close', project_substitutions['items_close'])
@@ -235,7 +233,6 @@ class WeeklyProgressCronJobTestCase(TestCase):
         self.assertEqual('49', my_project_substitutions['actual'])
         self.assertEqual('green', my_project_substitutions['color'])
         self.assertEqual('#56D694', my_project_substitutions['color_hex'])
-        self.assertEqual('1', my_project_substitutions['id'])
         self.assertEqual('1 item under', my_project_substitutions['items_under'])
         self.assertEqual('1 item over', my_project_substitutions['items_over'])
         self.assertEqual('1 item close', my_project_substitutions['items_close'])
@@ -373,6 +370,42 @@ class WeeklyProgressCronJobTestCase(TestCase):
         cronjob.do()
 
         self.assertEqual(mock_send_email.call_count, 0)
+
+    def test_generate_weekly_substitutions_decimal_hours(self):
+            user = User.objects.get(email='kehoffman3@gmail.com')
+            team = Team.objects.get(name='Kritters', creator=user)
+            project = Project.objects.create(name='Project', team=team, last_weeks_hours=6)
+            category = Category.objects.create(name='Category', project=project)
+            Item.objects.create(description='Item', actual=24.31, estimated=25, category=category)
+
+            cronjob = WeeklyProgressCronJob()
+            cronjob.update_all_projects()
+
+            projects_data = cronjob.get_projects_data_for_user(user)
+            substitutions = cronjob.generate_projects_substitutions(projects_data)
+
+            project_substitutions = substitutions[0]
+            self.assertEqual('Project', project_substitutions['name'])
+            self.assertEqual('25', project_substitutions['estimated'])
+            self.assertEqual('24.31', project_substitutions['actual'])
+            self.assertEqual('yellow', project_substitutions['color'])
+            self.assertEqual('#FDD371', project_substitutions['color_hex'])
+            self.assertEqual('0.69 hours under', project_substitutions['status'])
+            self.assertEqual(str(project.id), project_substitutions['id'])
+            self.assertEqual('0 items under', project_substitutions['items_under'])
+            self.assertEqual('0 items over', project_substitutions['items_over'])
+            self.assertEqual('1 item close', project_substitutions['items_close'])
+
+            my_project_substitutions = substitutions[1]
+            self.assertEqual(self.PROJECT_NAME, my_project_substitutions['name'])
+            self.assertEqual('60', my_project_substitutions['estimated'])
+            self.assertEqual('49', my_project_substitutions['actual'])
+            self.assertEqual('11 hours under', my_project_substitutions['status'])
+            self.assertEqual('green', my_project_substitutions['color'])
+            self.assertEqual('#56D694', my_project_substitutions['color_hex'])
+            self.assertEqual('1 item under', my_project_substitutions['items_under'])
+            self.assertEqual('1 item over', my_project_substitutions['items_over'])
+            self.assertEqual('1 item close', my_project_substitutions['items_close'])
 
 
 

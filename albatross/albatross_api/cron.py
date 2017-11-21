@@ -10,6 +10,7 @@ from authentication.models import UserProfile
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.db.models import Q
@@ -166,7 +167,10 @@ def format_decimal(num):
 
 class WeeklyProgressCronJob(CronJobBase):
     RUN_AT_TIMES = ['06:00']
-    schedule = Schedule(run_at_times=RUN_AT_TIMES)
+    # Prevent job being rerun after a failure: https://github.com/Tivix/django-cron/issues/115
+    RETRY_AFTER_FAILURE_MINS = 864000000
+
+    schedule = Schedule(run_at_times=RUN_AT_TIMES, retry_after_failure_mins=RETRY_AFTER_FAILURE_MINS)
 
     code = 'albatross_api.cron.WeeklyProgressCronJob'
 
@@ -308,7 +312,7 @@ class WeeklyProgressCronJob(CronJobBase):
             color_hex = ""
             status_text = ""
 
-            pluralize_hours = int(hours_diff) != 1
+            pluralize_hours = hours_diff != 1
             if status is self.Status.OVER:
                 color = "red"
                 color_hex = "#F46070"
@@ -382,7 +386,11 @@ class WeeklyProgressCronJob(CronJobBase):
 
         self.update_all_projects()
         for user in users:
-            if not user.profile.wants_weekly_emails:
+            # Check if user has a profile and wants weekly emails
+            try:
+                if not user.profile.wants_weekly_emails:
+                    continue
+            except ObjectDoesNotExist:
                 continue
 
             projects_data = self.get_projects_data_for_user(user)
