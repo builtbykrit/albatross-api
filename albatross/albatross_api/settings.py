@@ -272,35 +272,35 @@ HARVEST_CLIENT_SECRET = os.environ.get('HARVEST_CLIENT_SECRET')
 # DRF Stripe Settings
 
 PAYMENTS_PLANS = {
-    "agency-beta-monthly": {
-        "stripe_plan_id": "agency-beta-monthly",
-        "name": "Agency ($25/month)",
+    "agency-monthly": {
+        "stripe_plan_id": "agency-monthly",
+        "name": "Agency ($50/month)",
         "description": "The monthly agency subscription to Albatross",
+        "price": 50,
+        "currency": "usd",
+        "interval": "month"
+    },
+    "agency-annual": {
+        "stripe_plan_id": "agency-annual",
+        "name": "Agency ($500/year)",
+        "description": "The annual agency subscription to Albatross",
+        "price": 500,
+        "currency": "usd",
+        "interval": "year"
+    },
+    "freelancer-monthly": {
+        "stripe_plan_id": "freelancer-monthly",
+        "name": "Freelancer ($25/month)",
+        "description": "The monthly freelancer subscription to Albatross",
         "price": 25,
         "currency": "usd",
         "interval": "month"
     },
-    "agency-beta-annual": {
-        "stripe_plan_id": "agency-beta-annual",
-        "name": "Agency ($250/year)",
-        "description": "The annual agency subscription to Albatross",
-        "price": 250,
-        "currency": "usd",
-        "interval": "year"
-    },
-    "freelancer-beta-monthly": {
-        "stripe_plan_id": "freelancer-beta-monthly",
-        "name": "Freelancer ($10/month)",
-        "description": "The monthly freelancer subscription to Albatross",
-        "price": 10,
-        "currency": "usd",
-        "interval": "month"
-    },
-    "freelancer-beta-annual": {
-        "stripe_plan_id": "freelancer-beta-annual",
-        "name": "Freelancer ($100/year)",
+    "freelancer-annual": {
+        "stripe_plan_id": "freelancer-annual",
+        "name": "Freelancer ($250/year)",
         "description": "The annual freelancer subscription to Albatross",
-        "price": 100,
+        "price": 250,
         "currency": "usd",
         "interval": "year"
     },
