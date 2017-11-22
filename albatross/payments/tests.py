@@ -178,7 +178,7 @@ class SubscriptionTestCase(APITestCase):
         assert not json_data['trial_start']
 
     def test_subscribe(self):
-        plan_id = 'agency-beta-monthly'
+        plan_id = 'agency-monthly'
         response = change_subscription(self.client, plan_id)
         assert response.status_code == 201
 
@@ -219,24 +219,24 @@ class SubscriptionTestCase(APITestCase):
         assert 'statement_description' in plan
         assert 'statement_descriptor' in plan
         #
-        assert plan['amount'] == 2500
+        assert plan['amount'] == 5000
         assert plan['currency'] == 'usd'
         assert plan['id'] == plan_id
         assert plan['interval'] == 'month'
         assert plan['interval_count'] == 1
-        assert plan['name'] == 'Agency Beta Monthly'
+        assert plan['name'] == 'Agency Monthly'
         assert plan['statement_description'] == 'Albatross App'
         assert plan['statement_descriptor'] == 'Albatross App'
 
     def test_get_subscription(self):
-        plan_id = 'agency-beta-monthly'
+        plan_id = 'agency-monthly'
         change_subscription(self.client, plan_id)
         response = self.client.get(reverse('payments-subscription'))
         assert response.status_code == 200
         self.assert_valid_subscription_response(response, plan_id)
 
     def test_get_subscription_as_team_member(self):
-        plan_id = 'agency-beta-monthly'
+        plan_id = 'agency-monthly'
         change_subscription(self.client, plan_id)
 
         user = User.objects.create_user(
@@ -296,7 +296,7 @@ class WebhookTestCase(APITestCase):
         self.client.force_authenticate(user=user)
         # Create a subscription for the user and grab their Cusotmer object
         change_card_token(self.client, 'tok_visa')
-        plan_id = 'agency-beta-monthly'
+        plan_id = 'agency-monthly'
         change_subscription(self.client, plan_id)
         self.stripe_customer = Customer.objects.get(user=user)
 

@@ -39,7 +39,7 @@ class TeamViewsTestCase(APITestCase):
         assert 'on_trial' in attributes
         assert 'trial_expires_at' in attributes
         assert attributes['name'] == self.TEAM_INFO['name']
-        assert attributes['on_trial'] == True
+        assert attributes['on_trial'] == False
         assert (datetime.strptime(attributes['trial_expires_at'],
                                       "%Y-%m-%dT%H:%M:%S.%fZ")
                     - datetime.now()

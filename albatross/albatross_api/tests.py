@@ -93,7 +93,9 @@ class TrailExpirationCronJobTestCase(TestCase):
         )
         team = Team.objects.create(
             creator=user,
-            name='Team'
+            name='Team',
+            on_trial=True
+
         )
 
         user_with_nearly_expired_trial = User.objects.create_user(
@@ -106,6 +108,7 @@ class TrailExpirationCronJobTestCase(TestCase):
         team_with_nearly_expired_trial = Team.objects.create(
             creator=user_with_nearly_expired_trial,
             name='Team with nearly expired trial',
+            on_trial=True,
             trial_expires_at=timezone.now() + timedelta(hours=71)
         )
 
@@ -115,10 +118,12 @@ class TrailExpirationCronJobTestCase(TestCase):
             last_name='Account',
             password='password125',
             username='user.3@example.com'
+
         )
         team_with_expired_trial = Team.objects.create(
             creator=user_with_nearly_expired_trial,
             name='Team with expired trial',
+            on_trial=True,
             trial_expires_at=timezone.now() - timedelta(hours=1)
         )
 
