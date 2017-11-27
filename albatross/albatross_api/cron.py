@@ -239,6 +239,7 @@ class WeeklyProgressCronJob(CronJobBase):
 
                 project_data["previous_weeks_hours"] = project.previous_weeks_hours
                 project_data["name"] = project.name
+                project_data["archived"] = project.archived
 
                 estimated = project.estimated
                 actual = project.actual
@@ -299,6 +300,8 @@ class WeeklyProgressCronJob(CronJobBase):
         projects_substitutions = []
 
         for project_data in projects_data:
+            if project_data["archived"]:
+                continue
             actual = project_data["actual"]
             formatted_actual = format_decimal(actual)
 
