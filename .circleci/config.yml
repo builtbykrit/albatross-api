@@ -47,7 +47,7 @@ jobs:
             export DB_PASSWORD="circleci_test_password"
             export DB_PORT=5432
             export DB_USER="ubuntu"
-            cd b3i
+            cd albatross
             python ./manage.py test
             python ./manage.py behave
 
