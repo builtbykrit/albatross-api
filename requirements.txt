@@ -17,7 +17,7 @@ django-picklefield==1.0.0
 django-rest-auth==0.9.1
 -e git+https://github.com/Guest007/django-rest-framework-stripe.git@905b2f6b9bbb06acb46d16f99e91de9f541289cc#egg=django_rest_framework_stripe
 django-storages==1.6.5
-djangorestframework==3.6.4
+djangorestframework==3.11.2
 djangorestframework-jsonapi==2.2.0
 gunicorn==19.7.1
 harvest-api-client==1.1.3
