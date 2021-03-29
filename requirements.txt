@@ -35,7 +35,7 @@ parse==1.8.2
 parse-type==0.3.4
 pbr==3.1.1
 psycopg2==2.7.3
-Pygments==2.2.0
+Pygments==2.7.4
 python-dateutil==2.6.1
 python-http-client==3.0.0
 pytz==2017.2
